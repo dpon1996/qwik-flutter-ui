@@ -1,0 +1,41 @@
+/*
+ * Text — typography primitive with semantic-tag reset.
+ *
+ * Per API_DESIGN §14: browser default styles for semantic tags (e.g. <h1>
+ * font-size) are reset so typography props remain the source of truth.
+ *
+ * Dynamic per-instance values (color, fontSize, maxLines, etc.) are applied
+ * via inline `style` from text.tsx. Static rules live here:
+ *   - base reset (.text)
+ *   - line-clamp helper (.clamp)
+ *   - fade overflow approximation (.overflow-fade)
+ *   - non-selectable helper (.not-selectable)
+ */
+
+.text {
+  margin: 0;
+  padding: 0;
+  font-size: unset;
+  font-weight: unset;
+  font-style: unset;
+  line-height: unset;
+  letter-spacing: unset;
+  text-decoration: unset;
+  text-transform: unset;
+}
+
+/* Applied when maxLines is set — pairs with inline -webkit-line-clamp. */
+.clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* TextOverflow.fade approximation (§14 notes). */
+.overflow-fade {
+  mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
+}
+
+.not-selectable {
+  user-select: none;
+}

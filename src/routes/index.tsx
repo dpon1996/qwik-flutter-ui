@@ -1,21 +1,27 @@
 import { component$ } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
+import { FontWeight, TextAlign, TextDecoration, TextDecorationStyle, TextOverflow, TextTransform } from "~/lib/_shared";
 import { Container } from "~/lib/container/container";
-import { Positioned } from "~/lib/positioned";
-import { SizedBox } from "~/lib/sized-box";
-import { Stack } from "~/lib/stack";
+import { Text } from "~/lib/text";
 
 export default component$(() => {
   return (
-    <SizedBox height={500}>
-      <Stack>
-        <Container backgroundColor="red" width={500} height={500}></Container>
-        <Positioned top={50} left={30} >
-          <Container backgroundColor="blue" width={300} height={300}></Container>
-        </Positioned>
-
-      </Stack>
-    </SizedBox>
+    <Container backgroundColor="#010101" maxWidth={500} padding={[16, 32, 50, 25]}>
+      <Text maxLines={2}
+        overflow={TextOverflow.ellipsis}
+        color="#fff"
+        fontSize={20}
+        fontWeight={FontWeight.bold}
+        fontFamily="Arial, sans-serif"
+        letterSpacing={1}
+        wordSpacing={1}
+        lineHeight={1.5}
+        decoration={TextDecoration.underline}
+        decorationColor="#fff"
+        decorationStyle={TextDecorationStyle.dashed}
+        textTransform={TextTransform.uppercase}
+        textAlign={TextAlign.center}  >Hello World this is a test message that should be truncated</Text>
+    </Container>
   );
 });
 
