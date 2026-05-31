@@ -6,5 +6,8 @@
  * (see docs/API_DESIGN.md §19 implementation checklist).
  */
 
-// Shared enums + types (Phase 1 of the implementation checklist).
+// Shared enums + types (Phase 1).
 export * from "./lib/_shared";
+
+// Widgets (Phase 2+).
+export * from "./lib/container";

@@ -1,0 +1,68 @@
+/*
+ * Container — base structure + 9-point alignment helpers.
+ *
+ * Per-instance properties (width/height/padding/margin/colors/etc.) are
+ * applied via inline `style` from container.tsx, not from this file.
+ * That keeps the CSS tiny (one base class + nine alignment classes) and
+ * SSR-friendly: every dynamic value renders into the markup directly.
+ */
+
+.container {
+  box-sizing: border-box;
+}
+
+/* ---- alignment helpers (used when `alignment` prop is set) ---- */
+
+.alignment-top-left {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.alignment-top-center {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.alignment-top-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+}
+
+.alignment-center-left {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.alignment-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.alignment-center-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.alignment-bottom-left {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-end;
+}
+
+.alignment-bottom-center {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.alignment-bottom-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
