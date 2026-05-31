@@ -1,6 +1,6 @@
 # qwik-flutter-ui — Public API Design
 
-> **Status:** v1 architecture finalized. All decisions resolved — implementation can begin.
+> **Status:** v1 layout + typography finalized. **v1.1** (§15–§21) specified — resolve open questions in §22 before implementation. **v1.2** scrolling (§26.2) and future forms/theming (§26.3–§26.4) are roadmap-level only.
 > **Goal:** A Flutter-inspired UI framework for Qwik. The API should feel as close to Flutter as possible while remaining idiomatic JSX.
 
 ---
@@ -39,11 +39,19 @@ Every API decision in this document is justified against these ten principles. W
 - §12 — `Stack`
 - §13 — `Positioned`
 - §14 — `Text`
-- §15 — API consistency review
-- §16 — Summary table
-- §17 — Decisions log
-- §18 — Roadmap
-- §19 — Final implementation checklist
+- §15 — `Card`
+- §16 — `Divider`
+- §17 — `Button`
+- §18 — `Image`
+- §19 — `Visibility`
+- §20 — `Align`
+- §21 — `AspectRatio`
+- §22 — Open questions (approval required)
+- §23 — API consistency review
+- §24 — Summary table
+- §25 — Decisions log
+- §26 — Roadmap (incl. version summary, scrolling, forms, theming)
+- §27 — Final implementation checklist
 
 ---
 
@@ -117,18 +125,29 @@ Every widget extends `BaseProps` (§2). It includes:
 
 We do **not** spread `...rest` onto the DOM beyond the above; arbitrary unknown props are rejected by TypeScript. This keeps the API tight while still allowing accessibility and test instrumentation.
 
-### 0.7 Naming
+### 0.7 Interactive widgets (v1.1+)
+
+Layout widgets (§3–§14) stay **non-interactive** — no `onClick$` (see §23.6). **`Button`** (§17) is the first widget that accepts Qwik event handlers.
+
+Conventions for all interactive widgets:
+
+- Handlers use Qwik's `on*Event$` naming (`onClick$`, `onKeyDown$`, …).
+- Prefer native elements (`<button>`, `<a>`) over `<div onClick$>`.
+- `disabled` maps to the native `disabled` attribute (buttons) or `aria-disabled` + `pointer-events: none` where native disable doesn't exist.
+- Focus ring styles live in the widget's CSS module (`:focus-visible`), not removed by default.
+
+### 0.8 Naming
 
 - Components: `PascalCase` (matches Flutter).
 - Props: `camelCase` (matches Flutter + JS).
 - Enums: `PascalCase` type name + `PascalCase` import; member keys are `camelCase` (e.g. `MainAxisAlignment.spaceBetween`) to match Flutter style.
 - We keep Flutter prop names (`mainAxisAlignment`) rather than CSS names (`justifyContent`) so Flutter docs translate 1:1.
 
-### 0.8 Overflow
+### 0.9 Overflow
 
 Default `overflow: visible` everywhere except `Stack`, which defaults to `Clip.hardEdge` for Flutter parity. Users opt in to clipping via `Container({ style: { overflow: "hidden" } })` (v1) or future `Container.clip` (v1.1).
 
-### 0.9 Folder structure
+### 0.10 Folder structure
 
 **One widget per folder.** Each widget owns its component, prop types, and barrel:
 
@@ -185,10 +204,17 @@ src/
     │   ├── positioned.tsx
     │   ├── types.ts
     │   └── index.ts
-    └── text/
-        ├── text.tsx
-        ├── types.ts
-        └── index.ts
+    ├── text/
+    │   ├── text.tsx
+    │   ├── types.ts
+    │   └── index.ts
+    ├── card/
+    ├── divider/
+    ├── button/
+    ├── image/
+    ├── visibility/
+    ├── align/
+    └── aspect-ratio/
 ```
 
 Package entry (`src/index.ts`) re-exports:
@@ -207,6 +233,13 @@ export { Wrap } from "./lib/wrap";
 export { Stack } from "./lib/stack";
 export { Positioned } from "./lib/positioned";
 export { Text } from "./lib/text";
+export { Card } from "./lib/card";
+export { Divider } from "./lib/divider";
+export { Button } from "./lib/button";
+export { Image } from "./lib/image";
+export { Visibility } from "./lib/visibility";
+export { Align } from "./lib/align";
+export { AspectRatio } from "./lib/aspect-ratio";
 
 // Prop types
 export type { RowProps } from "./lib/row";
@@ -217,7 +250,7 @@ export type { ColumnProps } from "./lib/column";
 export * from "./lib/_shared";
 ```
 
-### 0.10 Enums vs string literals
+### 0.11 Enums vs string literals
 
 Flutter uses real enums. Strings are not allowed. We mirror this for parity and IDE autocomplete.
 
@@ -356,7 +389,7 @@ export const VerticalDirection = {
 } as const;
 ```
 
-### 1.9 `Alignment` — `Container` / `Stack` / `Center`
+### 1.9 `Alignment` — `Container` / `Stack` / `Center` / `Align`
 
 Full 9-point alignment grid, mirroring Flutter's `Alignment` constants.
 
@@ -376,7 +409,7 @@ export const Alignment = {
 
 **Mapping to CSS** — `Alignment` is used in two distinct contexts. The implementation picks the right CSS based on the consuming widget:
 
-| `Alignment` value | Flex context (`Container`, `Center`) | Stack context (`Stack`) |
+| `Alignment` value | Flex context (`Container`, `Center`, `Align`) | Stack context (`Stack`) |
 | ----------------- | ------------------------------------ | ----------------------- |
 |                   | `justify-content` / `align-items` on a flex parent | Absolute positioning of non-positioned children |
 | `topLeft`         | `justify-content: flex-start; align-items: flex-start` | `top: 0; left: 0` |
@@ -524,6 +557,87 @@ export const BorderStyle = {
 
 > Flutter only has `none` and `solid`. We expose `dashed` / `dotted` since CSS supports them for free; users from Flutter ignore them.
 
+### 1.21 `BoxFit` — `Image`
+
+Maps to CSS `object-fit`. Mirrors Flutter's [`BoxFit`](https://api.flutter.dev/flutter/painting/BoxFit.html).
+
+```ts
+export const BoxFit = {
+  fill:      "fill",
+  contain:   "contain",
+  cover:     "cover",
+  fitWidth:  "fit-width",   // CSS: object-fit: none + width constraint (see §18)
+  fitHeight: "fit-height",
+  none:      "none",
+  scaleDown: "scale-down",
+} as const;
+```
+
+| `BoxFit`      | CSS `object-fit` | Notes                                                                 |
+| ------------- | ---------------- | --------------------------------------------------------------------- |
+| `fill`        | `fill`           | Stretch to fill; may distort aspect ratio.                            |
+| `contain`     | `contain`        | Letterbox inside bounds.                                              |
+| `cover`       | `cover`          | Crop to fill bounds.                                                  |
+| `fitWidth`    | `none` + sizing  | Scale down so width fits; height may clip. **Deferred in v1.1 impl (§22.5).** |
+| `fitHeight`   | `none` + sizing  | Scale down so height fits; width may clip. **Deferred in v1.1 impl (§22.5).** |
+| `none`        | `none`           | Intrinsic size; may overflow.                                         |
+| `scaleDown`   | `scale-down`     | Like `contain` but never upscale. **Default for `Image`.**            |
+
+> `fitWidth` / `fitHeight` have no single `object-fit` keyword; implementation uses `object-fit: none` plus `width`/`height`/`max-*` rules documented in §18.
+
+### 1.22 `ButtonVariant` — `Button`
+
+Material-style button appearances. Mirrors Flutter 3's [`FilledButton`](https://api.flutter.dev/flutter/material/FilledButton-class.html), [`OutlinedButton`](https://api.flutter.dev/flutter/material/OutlinedButton-class.html), and [`TextButton`](https://api.flutter.dev/flutter/material/TextButton-class.html).
+
+```ts
+export const ButtonVariant = {
+  filled:    "filled",     // solid background (M3 FilledButton / legacy ElevatedButton body)
+  outlined:  "outlined",   // border, transparent fill
+  text:      "text",       // no border, transparent fill
+  elevated:  "elevated",   // filled + shadow (legacy ElevatedButton; extension for parity)
+} as const;
+```
+
+| Variant    | Typical surface                                      | Flutter analogue        |
+| ---------- | ---------------------------------------------------- | ----------------------- |
+| `filled`   | Solid `backgroundColor`, no shadow                     | `FilledButton`          |
+| `outlined` | Transparent fill + `border`                          | `OutlinedButton`        |
+| `text`     | Transparent fill, no border                            | `TextButton`            |
+| `elevated` | Solid fill + `box-shadow` (uses Card-like elevation) | `ElevatedButton` (M2) |
+
+**Default:** `ButtonVariant.filled`.
+
+### 1.23 `ImageLoading` — `Image` (v1.1)
+
+Native lazy-loading hint. Not a Flutter concept; web-standard.
+
+```ts
+export const ImageLoading = {
+  eager: "eager",
+  lazy:  "lazy",
+} as const;
+```
+
+**Default:** `ImageLoading.lazy`.
+
+### 1.24 `ButtonSize` — `Button` (planned, not v1.1)
+
+Density presets for `Button`. **Specified for roadmap consistency; not exported until v1.2+** (see §17 future extensibility).
+
+```ts
+export const ButtonSize = {
+  small:  "small",
+  medium: "medium",
+  large:  "large",
+} as const;
+```
+
+| Size     | Intended use                                      |
+| -------- | ------------------------------------------------- |
+| `small`  | Dense toolbars, tables, inline actions.           |
+| `medium` | Default app density (matches v1.1 hard-coded pad). |
+| `large`  | Primary CTAs, touch-first layouts.                |
+
 ---
 
 ## 2. Shared types
@@ -594,6 +708,22 @@ export interface FlexProps extends BaseProps {
   textDirection?: TextDirection;
   verticalDirection?: VerticalDirection;
 }
+
+// §5 Container, §15 Card — semantic layout/surface tags.
+export type ContainerTag =
+  | "div" | "section" | "article" | "header" | "footer"
+  | "nav" | "aside" | "main";
+
+// §17 Button — native interactive element.
+export type ButtonTag = "button" | "a";
+
+// §17 — optional base for interactive widgets (not used by layout widgets).
+import type { QRL } from "@builder.io/qwik";
+
+export interface InteractiveProps {
+  onClick$?: QRL<(event: MouseEvent, element: HTMLElement) => void>;
+  disabled?: boolean;
+}
 ```
 
 **Notes:**
@@ -601,6 +731,7 @@ export interface FlexProps extends BaseProps {
 - `CSSProperties` is imported from `@builder.io/qwik`, not React (Qwik's type is structurally compatible but uses kebab-case-aware keys).
 - `AriaAttributes` / `DataAttributes` use template-literal-key index signatures so any `aria-*` or `data-*` attribute typechecks without us having to enumerate them. `data-testid` is no longer a special-cased prop — it's covered by the `data-*` index.
 - All widget prop interfaces (`RowProps`, `ColumnProps`, `ContainerProps`, …) extend `BaseProps` either directly or via `FlexProps`, so every widget gets accessibility passthrough for free.
+- `ContainerTag` is shared by `Container` and `Card`. `InteractiveProps` is extended only by `Button` in v1.1.
 
 ---
 
@@ -667,7 +798,7 @@ Row(
 - **`gap` is a deliberate extension** — Flutter has no `gap`; idiomatic Flutter uses `SizedBox`.
 - **No `wrap` prop.** Wrapping behavior lives in §11 `Wrap`.
 - **`mainAxisSize`** controls the row's own width — see §1.3 for the behavior table.
-- **Overflow defaults to `visible`** (see §0.8).
+- **Overflow defaults to `visible`** (see §0.9).
 
 ---
 
@@ -842,6 +973,7 @@ Container(
 
 ### Notes
 
+- For Material-style elevated panels, prefer **`Card`** (§15) over `Container` + manual `boxShadow`.
 - **`as` prop** keeps `Container` as a layout primitive while still emitting semantic HTML. The internal styling/classes are identical regardless of tag.
 - `backgroundColor` + `gradient`: Flutter forbids both. We let CSS resolve and document that `gradient` wins (it paints on top).
 - **Deferred to v1.1:**
@@ -1106,8 +1238,9 @@ Center(child: Text('Centered'))
 
 ### Notes
 
-- Equivalent to `Container({ width: '100%', height: '100%', alignment: Alignment.center })`. Shipped because it's idiomatic in Flutter.
-- `widthFactor` / `heightFactor` rarely used — **deferred to v1.1** if they complicate implementation.
+- Equivalent to `Align({ alignment: Alignment.center })` inside a parent that gives it bounded constraints, or `Container` with full-size + `alignment: Alignment.center`.
+- **`widthFactor` / `heightFactor`** live on **`Align`** (§20), not `Center` — keeps `Center` a zero-config convenience widget.
+- For arbitrary alignment (not dead-center), use **`Align`** (§20).
 
 ---
 
@@ -1422,26 +1555,879 @@ Text(
 
 ---
 
-## 15. API consistency review
+## 15. `Card`
 
-Findings from a self-review against Principles #1–#10 and the established conventions. All six items below have been resolved — two are now in v1 (§15.3, §15.4); the other four are deferred or kept as-is with rationale recorded.
+A Material-style **surface** for grouped content — elevation, rounded corners, and padding without the full sizing/alignment surface of `Container`. Flutter's [`Card`](https://api.flutter.dev/flutter/material/Card-class.html).
 
-### 15.1 Confirmed consistent
+`Card` is intentionally **narrower than `Container`**: no `width`/`height`/`margin`/`alignment`/`gradient` in v1.1. Use `Container` when you need a generic box; use `Card` when you want a raised panel.
+
+### Props
+
+```ts
+export interface CardProps extends BaseProps {
+  /** Semantic tag. Default `"div"`. Prefer `"article"` for standalone content cards. */
+  as?: ContainerTag;
+
+  /** Shadow depth 0–24 (Material-style presets). Default `1`. Rounded to nearest integer. */
+  elevation?: number;
+
+  /** Outer spacing around the card surface (Flutter `margin`). */
+  margin?: EdgeInsets;
+
+  /** Inner spacing (Flutter often uses `Padding` child; we expose directly). */
+  padding?: EdgeInsets;
+
+  backgroundColor?: string;
+  borderRadius?: BorderRadius;
+  border?: string | BorderSide;
+  /** When set, overrides `elevation` shadow. */
+  boxShadow?: string | BoxShadow | BoxShadow[];
+}
+```
+
+| Prop              | Default   | Notes                                                                                    |
+| ----------------- | --------- | ---------------------------------------------------------------------------------------- |
+| `as`              | `"div"`   | Reuses `ContainerTag` (§2). Use `"article"` for feed/list cards.                          |
+| `elevation`       | `1`       | Maps to layered `box-shadow` presets (0 = flat). Ignored when `boxShadow` is set.        |
+| `margin`          | —         | `EdgeInsets` (§0.3). Flutter default margin is `4` — **not** applied by default (§22.1). |
+| `padding`         | —         | `EdgeInsets`.                                                                            |
+| `backgroundColor` | —         | CSS color string.                                                                        |
+| `borderRadius`    | —         | Same shape as `Container` (§5).                                                          |
+| `border`          | —         | Raw CSS or `BorderSide`.                                                                 |
+| `boxShadow`       | —         | Custom shadow; wins over `elevation`.                                                    |
+| _base props_      | —         | See §0.6.                                                                                |
+
+> Single child (slotted). Convention, not enforced.
+
+### Usage
+
+```tsx
+<Card as="article" padding={16} borderRadius={12} elevation={2}>
+  <Column gap={8}>
+    <Text as="h2" fontSize={20} fontWeight={FontWeight.bold}>
+      Account
+    </Text>
+    <Text>Manage your profile and preferences.</Text>
+  </Column>
+</Card>
+
+<Card elevation={0} border="1px solid var(--border)" padding={12}>
+  <Text>Outlined flat card</Text>
+</Card>
+
+<Row gap={16}>
+  <Card margin={{ y: 8 }} backgroundColor="#fff" elevation={1} padding={16} style={{ flex: 1 }}>
+    <Text>Left panel</Text>
+  </Card>
+  <Card margin={{ y: 8 }} backgroundColor="#fff" elevation={1} padding={16} style={{ flex: 1 }}>
+    <Text>Right panel</Text>
+  </Card>
+</Row>
+```
+
+### Flutter equivalent
+
+```dart
+Card(
+  elevation: 2,
+  margin: EdgeInsets.symmetric(vertical: 8),
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  child: Padding(
+    padding: EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Account', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        SizedBox(height: 8),
+        Text('Manage your profile and preferences.'),
+      ],
+    ),
+  ),
+)
+```
+
+### Accessibility considerations
+
+- Prefer `as="article"` when the card is a self-contained piece of content; use `role` + `aria-labelledby` / `aria-describedby` via `BaseProps` when the card is a landmark region.
+- **Do not** put click handlers on `Card` — use `Button` or wrap with a focusable control (§0.7, §17).
+- Elevation is visual only; do not rely on shadow alone to convey state (pair with `Text`, `border`, or `aria-*`).
+
+### Notes
+
+- Decoration converters are shared with `Container` via `_shared/internal` (implementation detail).
+- **`clipBehavior`** deferred to v1.1 alongside `Container.clip` (Decision #14).
+- **`shadowColor`** (Flutter) not exposed — use `boxShadow` with explicit color.
+- **`semanticContainer`** (Flutter) — use native semantics via `as` + ARIA on `BaseProps`.
+
+### Future extensibility
+
+| Version | Addition                                                                 |
+| ------- | ------------------------------------------------------------------------ |
+| v1.1    | `clipBehavior?: Clip`                                                    |
+| v1.2    | `surfaceTintColor` / theme tokens when a `ThemeProvider` lands (v2)      |
+| v2      | `InkWell` / ripple child wrapper; theme-driven default `borderRadius`    |
+
+---
+
+## 16. `Divider`
+
+A thin line separator. Flutter's [`Divider`](https://api.flutter.dev/flutter/material/Divider-class.html) and [`VerticalDivider`](https://api.flutter.dev/flutter/material/VerticalDivider-class.html) unified via `axis`.
+
+### Props
+
+```ts
+export interface DividerProps extends BaseProps {
+  /** Line orientation. Default `Axis.horizontal`. */
+  axis?: Axis;
+
+  /** Thickness of the line itself. Default `1` (px). */
+  thickness?: Length;
+
+  /**
+   * Total cross-axis size of the widget (Flutter `height` on horizontal
+   * divider / `width` on vertical). Default: horizontal `16`, vertical `16`.
+   */
+  size?: Length;
+
+  /** Inset before the line along the main axis. Default `0`. */
+  indent?: Length;
+
+  /** Inset after the line along the main axis. Default `0`. */
+  endIndent?: Length;
+
+  color?: string;
+}
+```
+
+| Prop        | Default (horizontal) | Default (vertical) | Notes                                      |
+| ----------- | -------------------- | ------------------ | ------------------------------------------ |
+| `axis`      | `Axis.horizontal`    | —                  | Reuses §1.4 `Axis`.                        |
+| `thickness` | `1`                  | `1`                | Line width in px.                            |
+| `size`      | `16`                 | `16`               | Cross-axis space (Flutter `height` / `width`). |
+| `indent`    | `0`                  | `0`                | Main-axis start inset.                       |
+| `endIndent` | `0`                  | `0`                | Main-axis end inset.                         |
+| `color`     | theme / `#e0e0e0`    | same               | CSS color. Implementation picks a neutral default. |
+| _base props_| —                    | —                  | See §0.6.                                  |
+
+> No children (zero-slot widget). Renders a single decorative separator element.
+
+### Usage
+
+```tsx
+<Column gap={0}>
+  <Text>Section A</Text>
+  <Divider />
+  <Text>Section B</Text>
+</Column>
+
+<Divider indent={16} endIndent={16} color="#ccc" thickness={2} />
+
+<Row style={{ height: 120 }}>
+  <Text>Left</Text>
+  <Divider axis={Axis.vertical} size="100%" />
+  <Text>Right</Text>
+</Row>
+```
+
+### Flutter equivalent
+
+```dart
+Column(
+  children: [
+    Text('Section A'),
+    Divider(),
+    Text('Section B'),
+  ],
+)
+
+Divider(indent: 16, endIndent: 16, color: Colors.grey, thickness: 2)
+
+Row(
+  children: [
+    Text('Left'),
+    VerticalDivider(),
+    Text('Right'),
+  ],
+)
+```
+
+### Accessibility considerations
+
+- Renders `<hr>` when `axis={Axis.horizontal}` (implicit `role="separator"`).
+- Renders `<div role="separator" aria-orientation="vertical">` when vertical (`<hr>` is only valid horizontally).
+- Set `aria-hidden={true}` via `BaseProps` when the divider is purely decorative and section headings already provide structure.
+- Do not use `Divider` as the only visual label between controls — pair with visible `Text`.
+
+### Notes
+
+- **No `height` prop** — use `size` for cross-axis dimension (unified API across axes).
+- Flutter's default divider color comes from `DividerTheme` — we use a fixed neutral until theming (v2).
+- **`vertical` as separate widget** not shipped; `axis` covers both (extension with Flutter parity).
+
+### Future extensibility
+
+| Version | Addition                                      |
+| ------- | --------------------------------------------- |
+| v1.2    | `variant?: "full" \| "inset"` shorthand        |
+| v2      | Theme token `DividerThemeData` equivalent       |
+
+---
+
+## 17. `Button`
+
+A labeled pressable control. Flutter's [`FilledButton`](https://api.flutter.dev/flutter/material/FilledButton-class.html) / [`OutlinedButton`](https://api.flutter.dev/flutter/material/OutlinedButton-class.html) / [`TextButton`](https://api.flutter.dev/flutter/material/TextButton-class.html).
+
+First **interactive** widget (§0.7). Accepts `onClick$`.
+
+### Props
+
+```ts
+export interface ButtonProps extends BaseProps, InteractiveProps {
+  /** Native element. Default `"button"`. Use `"a"` with `href` for link-styled buttons. */
+  as?: ButtonTag;
+
+  variant?: ButtonVariant;
+
+  /** Foreground (label) color. Named `color` to match `Text`, not `foregroundColor`. */
+  color?: string;
+  backgroundColor?: string;
+  padding?: EdgeInsets;
+  borderRadius?: BorderRadius;
+  border?: string | BorderSide;
+
+  /** Only when `as="button"`. Default `"button"` (prevents accidental form submit). */
+  type?: "button" | "submit" | "reset";
+
+  /** When set, renders navigation (see §22.2). */
+  href?: string;
+  target?: string;
+  rel?: string;
+
+  /** Elevation shadow for `ButtonVariant.elevated` only. Default `1`. */
+  elevation?: number;
+}
+```
+
+| Prop              | Default                 | Notes                                                         |
+| ----------------- | ----------------------- | ------------------------------------------------------------- |
+| `variant`         | `ButtonVariant.filled`  | See §1.22. Preset styles in CSS module per variant.           |
+| `type`            | `"button"`              | Ignored when rendering `<a>`.                                 |
+| `disabled`        | `false`                 | Native `disabled` on `<button>`; `aria-disabled` + no pointer on `<a>`. |
+| `onClick$`        | —                       | Suppressed when `disabled`.                                   |
+| `color`           | variant default         | Label color.                                                  |
+| `backgroundColor` | variant default         | Override surface color.                                       |
+| `padding`         | variant default         | `EdgeInsets`.                                                 |
+| `borderRadius`    | variant default         |                                                               |
+| `border`          | variant default         | Most relevant for `outlined`.                                 |
+| `elevation`       | `1`                     | Only for `elevated` variant.                                  |
+| `href`            | —                       | Link navigation; see open questions §22.2.                    |
+| _base props_      | —                       | `aria-label` required for icon-only buttons (documented).     |
+
+> Label content is **slotted** (`<Button>Save</Button>`). Icon-only buttons are v1.1 without a dedicated `Icon` widget — use slotted markup + `aria-label`.
+
+### Usage
+
+```tsx
+<Button variant={ButtonVariant.filled} onClick$={() => console.log("saved")}>
+  Save
+</Button>
+
+<Button variant={ButtonVariant.outlined} disabled>
+  Unavailable
+</Button>
+
+<Button
+  variant={ButtonVariant.text}
+  href="/docs"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  Read docs
+</Button>
+
+<Row gap={8}>
+  <Button type="submit">Submit</Button>
+  <Button variant={ButtonVariant.text} type="button" onClick$={() => {}}>
+    Cancel
+  </Button>
+</Row>
+```
+
+### Flutter equivalent
+
+```dart
+FilledButton(
+  onPressed: () => print('saved'),
+  child: Text('Save'),
+)
+
+OutlinedButton(onPressed: null, child: Text('Unavailable'))
+
+TextButton(
+  onPressed: () {},
+  child: Text('Read docs'),
+)
+```
+
+### Accessibility considerations
+
+- Default element is **`<button type="button">`** — keyboard activatable, in tab order, announced as button.
+- **Visible focus ring** via `:focus-visible` in CSS module (never `outline: none` without replacement).
+- **Icon-only:** caller must set `aria-label` (or `aria-labelledby`); document in examples/README.
+- **`disabled`:** use native `disabled` on buttons; for links, `aria-disabled="true"` and prevent `onClick$` / navigation.
+- **Contrast:** variant presets should meet WCAG AA for default theme; custom `color`/`backgroundColor` are caller's responsibility.
+- Do not nest interactive elements inside `Button`.
+
+### Notes
+
+- **`onPressed` → `onClick$`** — Qwik idiom, not Flutter name (Principle #5: Qwik resumability first).
+- **`styleFrom` / `ButtonStyle`** not exposed — flat decoration props only (same philosophy as `Container`).
+- **`autofocus`**, **`clipBehavior`**, **`isSemanticButton`** — deferred.
+- Layout widgets remain non-interactive (§23.6); `Button` is the pattern for future `Link`, `IconButton`.
+
+### Future extensibility
+
+#### `ButtonSize` (v1.2+)
+
+v1.1 ships a single density per `ButtonVariant` (padding, font size, min-height baked into CSS module presets). **`ButtonSize` is intentionally omitted from v1.1** because:
+
+1. **Surface area** — three sizes × four variants = twelve combinations to design, test, and keep accessible (touch targets, contrast).
+2. **No theme system yet** — sizes are really design tokens; without `ThemeData` (§27.4), every size would be hard-coded duplication.
+3. **Escape hatch exists** — callers can override `padding`, `fontSize` on slotted `Text`, or `class` / `style` until `size` lands.
+4. **Flutter parity timing** — Material 3 uses `ButtonStyle` + theme; we ship variants first, then density.
+
+**Planned API (v1.2):**
+
+```ts
+// enum §1.24 — not shipped in v1.1
+size?: ButtonSize;   // default ButtonSize.medium
+```
+
+| `ButtonSize` | Typical min-height | Typical horizontal padding |
+| ------------ | ------------------ | -------------------------- |
+| `small`      | ~32px              | 12px                       |
+| `medium`     | ~40px              | 16px                       |
+| `large`      | ~48px              | 24px                       |
+
+Exact values will align with `ThemeData` once theming lands (§27.4).
+
+#### Other planned additions
+
+| Version | Addition                                                                 |
+| ------- | ------------------------------------------------------------------------ |
+| v1.2    | `size?: ButtonSize` (§1.24); `onKeyDown$`, `autofocus`, `fullWidth?: boolean` |
+| v1.2    | `IconButton` widget; slotted `leading` / `trailing` icon slots           |
+| v2      | `Button.icon`, `Button.styleFrom` helper, theme-driven defaults, loading state |
+
+---
+
+## 18. `Image`
+
+Displays an image from a URL. Flutter's [`Image.network`](https://api.flutter.dev/flutter/widgets/Image/Image.network.html) / [`Image.asset`](https://api.flutter.dev/flutter/widgets/Image/Image.asset.html) — v1.1 is **URL-only** (`src`).
+
+### Props
+
+```ts
+export interface ImageProps extends BaseProps {
+  /** Image URL (required). */
+  src: string;
+
+  /**
+   * Accessible name. Required unless `decorative={true}`.
+   * Maps to the native `alt` attribute.
+   */
+  alt?: string;
+
+  /** When true, sets `alt=""` and `role="presentation"`. */
+  decorative?: boolean;
+
+  width?: Length;
+  height?: Length;
+  fit?: BoxFit;
+
+  /** CSS `object-position`. Default `"center"`. */
+  alignment?: string;
+
+  /** Color wash / tint via CSS `opacity` on a filter layer — defer complex blend modes. */
+  opacity?: number;
+
+  /** v1.1 — native `loading` attribute. */
+  loading?: ImageLoading;
+}
+```
+
+| Prop          | Default              | Notes                                                |
+| ------------- | -------------------- | ---------------------------------------------------- |
+| `src`         | (required)           | Passed to `<img src>`.                               |
+| `alt`         | —                    | Required if `decorative` is not `true`.              |
+| `decorative`  | `false`              | Decorative images must not duplicate nearby text.    |
+| `fit`         | `BoxFit.scaleDown`   | Maps to `object-fit` (§1.21).                        |
+| `alignment`   | `"center"`           | `object-position`.                                   |
+| `width`/`height` | —                 | `Length`.                                            |
+| `opacity`     | —                    | `0..1` on the `<img>` element.                       |
+| `loading`     | `ImageLoading.lazy`  | v1.1 enum (§1.23).                                   |
+| _base props_  | —                    | See §0.6.                                            |
+
+> Zero children. Self-closing: `<Image src="…" alt="…" />`.
+
+### Usage
+
+```tsx
+<Image src="/hero.jpg" alt="Team working together" width={400} height={240} fit={BoxFit.cover} />
+
+<Image src="/logo.svg" decorative width={48} height={48} fit={BoxFit.contain} />
+
+<Stack>
+  <Image src="/banner.png" alt="" decorative width="100%" height={200} fit={BoxFit.cover} />
+  <Positioned bottom={8} left={8}>
+    <Text color="#fff">Caption elsewhere</Text>
+  </Positioned>
+</Stack>
+```
+
+### Flutter equivalent
+
+```dart
+Image.network(
+  'https://example.com/hero.jpg',
+  width: 400,
+  height: 240,
+  fit: BoxFit.cover,
+)
+
+Image.asset(
+  'assets/logo.png',
+  width: 48,
+  height: 48,
+  fit: BoxFit.contain,
+)
+```
+
+### Accessibility considerations
+
+- **Meaningful images:** `alt` must describe content or function, not the filename.
+- **Decorative images:** `decorative={true}` → `alt=""` + `role="presentation"`.
+- **Do not** use `Image` for text — use real text or `Text`.
+- If the image is the sole control (e.g. icon button), use `Button` with slotted `<img alt="…">` instead.
+
+### Notes
+
+- **`Image.asset` / bundled assets** — caller resolves paths (`/assets/…`); no build-time asset pipeline in v1.1.
+- **`errorBuilder` / `loadingBuilder` / `frameBuilder`** — deferred (§24).
+- **`semanticLabel`** → `alt` (web-native naming).
+- **`excludeFromSemantics`** → `decorative`.
+- **`color` / `colorBlendMode`** (Flutter tint) — deferred; use CSS `filter` via `style` until v2.
+- **`gaplessPlayback`**, **`filterQuality`**, **`repeat`** — not applicable or deferred.
+
+### Future extensibility
+
+| Version | Addition                                                          |
+| ------- | ----------------------------------------------------------------- |
+| v1.1    | `loading`, `decoding?: "async" \| "sync" \| "auto"`               |
+| v1.2    | `srcset`, `sizes` for responsive images                           |
+| v2      | `placeholder`, `error` slots; `Image.asset` helper; LQIP blur      |
+
+---
+
+## 19. `Visibility`
+
+Shows or hides a child without removing it from the tree (optionally preserving layout space). Flutter's [`Visibility`](https://api.flutter.dev/flutter/widgets/Visibility-class.html).
+
+### Props
+
+```ts
+export interface VisibilityProps extends BaseProps {
+  /** When false, child is hidden. Default `true`. */
+  visible?: boolean;
+
+  /**
+   * When false and `visible` is false, remove from layout (`display: none`).
+   * When true, keep box but hide visually (`visibility: hidden` + no pointer events).
+   * Default `false`.
+   */
+  maintainSize?: boolean;
+
+  /**
+   * When false and `visible` is false, set `aria-hidden` on the wrapper.
+   * Default `true`.
+   */
+  maintainSemantics?: boolean;
+}
+```
+
+| Prop                 | Default | Behavior when `visible={false}`                                      |
+| -------------------- | ------- | -------------------------------------------------------------------- |
+| `visible`            | `true`  | —                                                                    |
+| `maintainSize`       | `false` | `false` → `display: none`; `true` → `visibility: hidden`, keeps box |
+| `maintainSemantics`  | `true`  | `false` → `aria-hidden="true"` on wrapper                            |
+| _base props_         | —       | See §0.6.                                                          |
+
+> Single child (slotted).
+
+### Usage
+
+```tsx
+<Visibility visible={isOpen}>
+  <Text>Details panel</Text>
+</Visibility>
+
+{/* Hidden but still occupies space (skeleton layout) */}
+<Visibility visible={false} maintainSize>
+  <Container height={200} backgroundColor="#f5f5f5" />
+</Visibility>
+
+<Column>
+  <Text>Always visible</Text>
+  <Visibility visible={showBonus} maintainSemantics={false}>
+    <Text>Bonus content (excluded from a11y tree when hidden)</Text>
+  </Visibility>
+</Column>
+```
+
+### Flutter equivalent
+
+```dart
+Visibility(
+  visible: isOpen,
+  child: Text('Details panel'),
+)
+
+Visibility(
+  visible: false,
+  maintainSize: true,
+  child: Container(height: 200, color: Color(0xFFF5F5F5)),
+)
+```
+
+### Accessibility considerations
+
+- When `visible={false}` and `maintainSemantics={true}` (default), wrapper gets **`aria-hidden="true"`** so assistive tech skips hidden content.
+- When `maintainSize={true}`, content is invisible but still in the tab order **unless** implementation also sets `inert` or `pointer-events: none` — **v1.1 applies `pointer-events: none` and `inert` when hidden** (extension for safety).
+- Prefer conditional rendering (`{show && <Panel />}`) when the hidden subtree is expensive or should not mount — `Visibility` is for cheap toggle / layout preservation.
+
+### Notes
+
+- **`replacement` widget** (Flutter) — deferred; use JSX conditional for alternate UI in v1.1.
+- **`maintainState`**, **`maintainAnimation`**, **`maintainInteractivity`** — largely N/A on web/Qwik SSR; see §22.4.
+- **`Offstage`** analogue — `maintainSize={true}` + `visible={false}`.
+
+### Future extensibility
+
+| Version | Addition                                                                 |
+| ------- | ------------------------------------------------------------------------ |
+| v1.2    | Named slot `replacement` when `visible={false}`                          |
+| v2      | `maintainState` via Qwik `useVisibleTask$` / resumable hide patterns     |
+
+---
+
+## 20. `Align`
+
+Positions a child within itself according to an `alignment` value. Flutter's [`Align`](https://api.flutter.dev/flutter/widgets/Align-class.html).
+
+### Purpose
+
+`Align` is a **layout** widget: it sizes itself from its parent constraints (or from the child when `widthFactor` / `heightFactor` are set), then places the child at a point on the 9-grid (`Alignment` enum, §1.9). Use it when you need top-left badges, bottom-right FABs, or fractional positioning — not just center.
+
+**`Align` vs `Container.alignment`:** `Container.alignment` turns the container into a flex parent to align children inside a **known box** (you set `width`/`height` on `Container`). `Align` is the Flutter layout primitive for positioning one child within **available space** from the parent; it does not require explicit container dimensions.
+
+**`Align` vs `Center`:** `Center` is sugar for `Align` with `alignment: Alignment.center`. Use `Center` when centering is all you need (§10).
+
+### Props
+
+```ts
+export interface AlignProps extends BaseProps {
+  /** Where to position the child within this widget. Default `Alignment.center`. */
+  alignment?: Alignment;
+
+  /**
+   * If set, width = child intrinsic width × factor (0..1).
+   * Same semantics as Flutter `widthFactor`.
+   */
+  widthFactor?: number;
+
+  /**
+   * If set, height = child intrinsic height × factor (0..1).
+   */
+  heightFactor?: number;
+}
+```
+
+| Prop            | Default              | Notes                                                                 |
+| --------------- | -------------------- | --------------------------------------------------------------------- |
+| `alignment`     | `Alignment.center`   | Maps to CSS positioning per §1.9 flex/grid context for `Align`.       |
+| `widthFactor`   | —                    | Shrinks this widget's width relative to child intrinsic size.         |
+| `heightFactor`  | —                    | Shrinks this widget's height relative to child intrinsic size.        |
+| _base props_    | —                    | See §0.6.                                                             |
+
+> Single child (slotted). Renders a `<div>` layout wrapper (no `as` prop in v1.1 — layout-only).
+
+### Usage
+
+```tsx
+<Container width="100%" height={300} backgroundColor="#f0f0f0">
+  <Align alignment={Alignment.bottomRight}>
+    <Button onClick$={() => {}}>Action</Button>
+  </Align>
+</Container>
+
+<Align alignment={Alignment.topLeft} widthFactor={0.5}>
+  <Text>Badge</Text>
+</Align>
+
+<Stack>
+  <Image src="/photo.jpg" alt="Product" width="100%" height={240} fit={BoxFit.cover} />
+  <Align alignment={Alignment.topRight}>
+    <Container padding={8} backgroundColor="rgba(0,0,0,0.5)" borderRadius={4}>
+      <Text color="#fff">Sale</Text>
+    </Container>
+  </Align>
+</Stack>
+```
+
+### Flutter equivalent
+
+```dart
+Align(
+  alignment: Alignment.bottomRight,
+  child: ElevatedButton(onPressed: () {}, child: Text('Action')),
+)
+
+Align(
+  alignment: Alignment.topLeft,
+  widthFactor: 0.5,
+  child: Text('Badge'),
+)
+```
+
+### Accessibility considerations
+
+- `Align` is a **non-semantic** layout wrapper (`<div>`). It does not affect reading order — the child remains in DOM order.
+- Do not use `Align` to hide content off-screen; use `Visibility` (§19) or conditional rendering.
+- When overlaying controls on media (`Stack` + `Align`), ensure interactive children remain keyboard-focusable and have sufficient contrast.
+
+### Notes
+
+- Implementation uses a positioned layout context (e.g. `display: grid` with `place-items` mapping, or `position: relative` + child `position: absolute` per §1.9 stack-style mapping) — chosen for SSR-stable static CSS.
+- **`widthFactor` / `heightFactor`** are rarely needed but ship in v1.1 for Flutter parity (moved off `Center`, §10).
+- Parent must provide **bounded constraints** for alignment to be visible (e.g. full-size `Container`, `Expanded`, or `Stack`).
+
+### Future extensibility
+
+| Version | Addition                                                |
+| ------- | ------------------------------------------------------- |
+| v1.2    | Optional `as?: ContainerTag` if a semantic wrapper is needed |
+| v2      | `Align.directional` parity when `textDirection` context is formalized |
+
+---
+
+## 21. `AspectRatio`
+
+Sizes its child to respect a width-to-height ratio. Flutter's [`AspectRatio`](https://api.flutter.dev/flutter/widgets/AspectRatio-class.html).
+
+### Purpose
+
+Locks **proportional sizing** for media, tiles, and embeds (16∶9 hero, 1∶1 avatars, 4∶3 cards) without manual `height` math. Maps cleanly to CSS `aspect-ratio` (SSR-friendly, no measurement JS).
+
+### Props
+
+```ts
+export interface AspectRatioProps extends BaseProps {
+  /**
+   * Width / height ratio. Required.
+   * `aspectRatio={16/9}` → CSS `aspect-ratio: 16 / 9`.
+   */
+  aspectRatio: number;
+}
+```
+
+| Prop           | Default | Notes                                                    |
+| -------------- | ------- | -------------------------------------------------------- |
+| `aspectRatio`  | (req.)  | Must be `> 0`. Flutter uses `width / height`.            |
+| _base props_   | —       | See §0.6.                                                |
+
+> Single child (slotted). Child is clipped or letterboxed by its own `fit` (e.g. `Image` + `BoxFit.cover`).
+
+### Usage
+
+```tsx
+<AspectRatio aspectRatio={16 / 9}>
+  <Image src="/hero.jpg" alt="Hero banner" width="100%" height="100%" fit={BoxFit.cover} />
+</AspectRatio>
+
+<Column>
+  <AspectRatio aspectRatio={1}>
+    <Container backgroundColor="#eee" alignment={Alignment.center}>
+      <Text>1:1 tile</Text>
+    </Container>
+  </AspectRatio>
+</Column>
+
+<Row gap={16}>
+  <AspectRatio aspectRatio={4 / 3} style={{ flex: 1 }}>
+    <Image src="/a.jpg" alt="Product A" width="100%" height="100%" fit={BoxFit.cover} />
+  </AspectRatio>
+  <AspectRatio aspectRatio={4 / 3} style={{ flex: 1 }}>
+    <Image src="/b.jpg" alt="Product B" width="100%" height="100%" fit={BoxFit.cover} />
+  </AspectRatio>
+</Row>
+```
+
+### Flutter equivalent
+
+```dart
+AspectRatio(
+  aspectRatio: 16 / 9,
+  child: Image.network('https://example.com/hero.jpg', fit: BoxFit.cover),
+)
+```
+
+### Accessibility considerations
+
+- The wrapper is a non-semantic `<div>`. Meaningful names come from the child (`Image` `alt`, `Text` content).
+- Ensure text inside a fixed-ratio box still meets contrast and is not clipped without `overflow` handling on the child.
+
+### Notes
+
+- **Width** comes from the parent constraint; **height** is computed from `aspectRatio` (Flutter parity). If parent has no width, ratio box may collapse — pair with `width="100%"` on parent flex child or `Container`.
+- Pairs naturally with **`Image`** (§18) and **`Stack`** overlays.
+- Invalid `aspectRatio <= 0` — TypeScript should document; runtime: treat as `1` or dev-only warning (implementation choice, §22.7).
+
+### Future extensibility
+
+| Version | Addition                                      |
+| ------- | --------------------------------------------- |
+| v1.2    | Optional `fit?: BoxFit` on wrapper (clip child) |
+| v2      | `AspectRatioPreset` enum (square, video, portrait) sugar |
+
+---
+
+## 22. Open questions (approval required)
+
+All items **approved** — recorded in §25 decisions #32–42. Retained here as an audit trail. Implementation PRs for v1.1 may proceed.
+
+| ID    | Question | Options | Resolution |
+| ----- | -------- | ------- | ---------- |
+| 22.1  | **Default `Card.margin`?** Flutter Material applies `EdgeInsets.all(4)`. | (A) No default — caller opts in. (B) Default `margin={4}`. | **(A) Approved** — decision #32. |
+| 22.2  | **`Button` + `href`:** auto-render `<a>` or require `as="a"`? | (A) `href` alone → `<a>`. (B) `as="a"` required when `href` set. | **(A) Approved** — decision #33. |
+| 22.3  | **`ButtonVariant.elevated` in v1.1?** | (A) Ship all four variants. (B) Ship `filled` / `outlined` / `text` only. | **(A) Approved** — decision #34. |
+| 22.4  | **`Visibility` + `inert` when hidden?** | (A) Always add `inert` when `visible={false}`. (B) Only when `maintainSize={true}`. | **(A) Approved** — decision #35. |
+| 22.5  | **`Image.fitWidth` / `fitHeight` implementation complexity** | (A) Ship in v1.1. (B) Defer; document `contain`/`cover` workarounds. | **(B) Approved** — decision #36. |
+| 22.6  | **v1.1 release grouping** | (A) All widgets in one milestone. (B) Split presentational / interactive / layout. | **(A) Approved** — decision #37. |
+| 22.7  | **`AspectRatio` invalid ratio at runtime** | (A) Clamp to `1` + dev warning. (B) Dev warning + render empty. | **(A) Approved** — decision #38. |
+| 22.8  | **Button loading state in v1.1?** | (A) Ship `loading?: boolean` in v1.1. (B) Defer to v1.2. | **(B) Approved** — decision #39. |
+| 22.9  | **Default `Image` `loading` behavior?** | (A) `loading="lazy"`. (B) `loading="eager"`. | **(A) Approved** — decision #40. |
+| 22.10 | **Default semantic tag for `Card`?** | (A) `"div"`. (B) `"article"`. | **(A) Approved** — decision #41. |
+| 22.11 | **`Align` implementation strategy?** | (A) CSS Grid (`place-items`). (B) Absolute positioning. | **(A) Approved** — decision #42. |
+
+### 22.8 Button loading state
+
+**Question:** Should `Button` ship with loading support in v1.1?
+
+**Options:**
+
+- **(A)** Ship `loading?: boolean` in v1.1
+- **(B)** Defer loading to v1.2
+
+**Recommendation:** **(B)** Defer to v1.2
+
+**Reason:**
+
+- Requires spinner design
+- Requires disabled interaction behavior
+- Requires accessibility announcements
+- Requires future icon support integration
+- Better to keep `Button` v1.1 focused and minimal
+
+**Resolution:** **Approved (B)** — decision #39.
+
+---
+
+### 22.9 Image lazy loading
+
+**Question:** What should be the default `loading` behavior for `Image`?
+
+**Options:**
+
+- **(A)** `loading="lazy"`
+- **(B)** `loading="eager"`
+
+**Recommendation:** **(A)** `loading="lazy"`
+
+**Reason:**
+
+- Better web performance
+- Improves page load speed
+- Matches modern web best practices
+- Hero images can explicitly opt into eager loading via `loading={ImageLoading.eager}`
+
+**Resolution:** **Approved (A)** — decision #40.
+
+---
+
+### 22.10 Card semantic tag
+
+**Question:** What should be the default semantic tag used by `Card`?
+
+**Options:**
+
+- **(A)** `div`
+- **(B)** `article`
+
+**Recommendation:** **(A)** `div`
+
+**Reason:**
+
+- Not all cards represent article content
+- More predictable default behavior
+- Consumers can use `as="article"` when needed
+
+**Resolution:** **Approved (A)** — decision #41.
+
+---
+
+### 22.11 Align implementation strategy
+
+**Question:** What implementation strategy should `Align` use internally?
+
+**Options:**
+
+- **(A)** CSS Grid (`place-items`)
+- **(B)** Absolute positioning
+
+**Recommendation:** **(A)** CSS Grid
+
+**Reason:**
+
+- Simpler implementation
+- Better SSR compatibility
+- Less CSS complexity
+- More predictable sizing behavior
+- Easier maintenance
+
+**Resolution:** **Approved (A)** — decision #42.
+
+---
+
+## 23. API consistency review
+
+Findings from a self-review against Principles #1–#10 and the established conventions. All items below have been resolved or updated for v1.1.
+
+### 23.1 Confirmed consistent
 
 - **Naming.** All flex children use `flex?: number`, all clip props use the `Clip` enum, all alignment props use either `Alignment` or `*Alignment` enums per Flutter. Container's `backgroundColor` is distinct from Text's `color` because they're semantically different (background vs foreground).
 - **Defaults.** Flex defaults (`crossAxisAlignment: center`, `mainAxisSize: max`) match Flutter. `Stack.clipBehavior: hardEdge` matches Flutter. All other widgets default to `Clip.none` / `overflow: visible`.
 - **Children API.** Single-child widgets all accept slotted children (not a `child` prop). Multi-child widgets all accept many slotted children. No widget mixes the two patterns.
 - **Type sharing.** `RowProps`/`ColumnProps` both alias `FlexProps`. Every widget extends `BaseProps`. `BorderRadius`, `BoxShadow`, `Gradient`, `BorderSide` are exported from `_shared/types.ts` and used consistently.
-- **Folder structure.** All 12 widgets follow `lib/<widget>/{<widget>.tsx, types.ts, index.ts}` exactly.
+- **Folder structure.** All widgets follow `lib/<widget>/{<widget>.tsx, types.ts, index.ts}` (+ optional `*.module.css`).
 
-### 15.2 Decisions encoded since the last review
+### 23.2 Decisions encoded since the last review
 
 - `Flexible` is now a v1 widget (§9), and `FlexFit` joins the enum catalog (§1.12). `Expanded`'s note now cross-references `Flexible`.
 - `MainAxisSize` already existed (§1.3) — this revision documents its behavior + CSS mapping properly. `Row` and `Column` prop tables now describe `min` vs `max` instead of just listing the type.
 - `Alignment` already existed (§1.9) — this revision adds the full CSS mapping table for both flex-context and stack-context consumers.
 - `BaseProps` now includes `role` and open `aria-*` / `data-*` index signatures (§2). `data-testid` is no longer special-cased.
 
-### 15.3 [RESOLVED] Semantic HTML `as` prop on `Text`
+### 23.3 [RESOLVED] Semantic HTML `as` prop on `Text`
 
 **Gap:** `Text` always rendering `<span>` violated Principle #2 (Semantic HTML). Headings, paragraphs, and labels need their proper tags for SEO and accessibility.
 
@@ -1451,7 +2437,7 @@ Findings from a self-review against Principles #1–#10 and the established conv
 as?: TextTag;   // "span" | "p" | "div" | "label" | "h1"..."h6" | "strong" | "em" | "small"
 ```
 
-### 15.4 [RESOLVED] Semantic HTML `as` prop on `Container`
+### 23.4 [RESOLVED] Semantic HTML `as` prop on `Container`
 
 **Gap:** `Container` always rendering `<div>` was fine for most layout cases, but `<section>`, `<article>`, `<header>`, `<footer>`, `<nav>`, `<aside>`, `<main>` are common and Principle #2 says we should support them.
 
@@ -1461,7 +2447,7 @@ as?: TextTag;   // "span" | "p" | "div" | "label" | "h1"..."h6" | "strong" | "em
 as?: ContainerTag;   // "div" | "section" | "article" | "header" | "footer" | "nav" | "aside" | "main"
 ```
 
-### 15.5 [RESOLVED] `Wrap.spacing` / `Wrap.runSpacing` naming asymmetry with `Row.gap` / `Column.gap`
+### 23.5 [RESOLVED] `Wrap.spacing` / `Wrap.runSpacing` naming asymmetry with `Row.gap` / `Column.gap`
 
 **Gap:** Within the same library, you use `gap` on `Row`/`Column` but `spacing`/`runSpacing` on `Wrap`. Inconsistent at first glance.
 
@@ -1469,15 +2455,13 @@ as?: ContainerTag;   // "div" | "section" | "article" | "header" | "footer" | "n
 
 **Recommendation:** **Keep as-is.** Document the asymmetry in `Wrap`'s notes (already done in §11). No action needed; flagged here so the choice is on the record.
 
-### 15.6 [RESOLVED] Event handlers on layout widgets
+### 23.6 [UPDATED] Event handlers on layout widgets
 
-**Gap:** No layout widget has `onClick$` or any other event handler. A user wanting a clickable card has to wrap `Container` in a `<button>` or `<a>`.
+**Gap:** Layout widgets have no `onClick$`. A clickable card must not use `onClick$` on `Card`/`Container`.
 
-**Justification for keeping as-is:** Layout widgets are intentionally pure layout. Mixing event handlers in would create ambiguity (does `onClick$` on a `Row` fire for the whole row or per-child?) and would require us to decide which element receives the listener. Better to leave this to interactive primitives in a future v2.
+**Resolution:** **Unchanged for layout widgets.** `Button` (§17) is the v1.1 interactive primitive; `Link` / `Tappable` remain v2 (§26). `Card` stays presentational — wrap with `Button` or use `Button` with `href` for navigation.
 
-**Recommendation:** **Keep as-is for v1.** Document that layout widgets are non-interactive. Add interactive primitives (`Button`, `Link`, `Tappable`) in a future release.
-
-### 15.7 [RESOLVED] Responsive prop shape (deferred to v2)
+### 23.7 [RESOLVED] Responsive prop shape (deferred to v2)
 
 **Gap:** Principle #9 promises responsive support; v1 only delivers it via CSS strings (`width="50%"`, `padding="clamp(...)"`).
 
@@ -1490,7 +2474,7 @@ type ContainerProps = { width?: Responsive<Length>; … };
 
 Reserved in the roadmap. Avoid prop-name conflicts in v1 so we can adopt this non-breakingly later.
 
-### 15.8 [RESOLVED] `Length` accepts arbitrary strings
+### 23.8 [RESOLVED] `Length` accepts arbitrary strings
 
 **Gap:** `Length = number | string` lets users pass anything — including invalid CSS. We don't validate.
 
@@ -1502,16 +2486,26 @@ All review items resolved.
 
 | #     | Item                                              | Resolution                                |
 | ----- | ------------------------------------------------- | ----------------------------------------- |
-| 15.3  | `Text.as` for semantic HTML                       | **Shipped in v1** (see §14).              |
-| 15.4  | `Container.as` for semantic HTML                  | **Shipped in v1** (see §5).               |
-| 15.5  | `Wrap` spacing-naming asymmetry                   | Kept (Flutter parity).                    |
-| 15.6  | Event handlers on layout widgets                  | Deferred to v2 interactive primitives.    |
-| 15.7  | Responsive prop shape                             | Deferred to v2.                           |
-| 15.8  | `Length` allows arbitrary strings                 | Kept (pragmatic).                         |
+| 23.3  | `Text.as` for semantic HTML                       | **Shipped in v1** (see §14).              |
+| 23.4  | `Container.as` for semantic HTML                  | **Shipped in v1** (see §5).               |
+| 23.5  | `Wrap` spacing-naming asymmetry                   | Kept (Flutter parity).                    |
+| 23.6  | Event handlers on layout widgets                  | `Button` in v1.1; layout stays non-interactive. |
+| 23.7  | Responsive prop shape                             | Deferred to v2.                           |
+| 23.8  | `Length` allows arbitrary strings                 | Kept (pragmatic).                         |
+
+### 23.9 [NEW] v1.1 basic UI + layout consistency
+
+- **`Card` vs `Container`:** `Card` owns surface/elevation defaults; `Container` owns sizing/alignment/constraints. No prop duplication beyond shared decoration types.
+- **`Button.color` vs `Text.color`:** both mean foreground; `Container.backgroundColor` remains background.
+- **`Image` is zero-slot; `Divider` is zero-slot;** `Visibility` / `Card` / `Button` follow single-child slot convention.
+- **`Divider.axis`** reuses `Axis` enum (§1.4) instead of a separate `VerticalDivider` widget.
+- **`Image.alt` required** unless `decorative` — stricter than Flutter, aligned with web a11y (Principle #3).
+- **`Align` vs `Center`:** `Center` = centered `Align`; factors only on `Align` (§20).
+- **`AspectRatio`** uses CSS `aspect-ratio`; no client measurement (Principle #4).
 
 ---
 
-## 16. Summary table
+## 24. Summary table
 
 | Widget       | Children      | v1? | Key Flutter divergence                                                         |
 | ------------ | ------------- | --- | ------------------------------------------------------------------------------ |
@@ -1522,17 +2516,24 @@ All review items resolved.
 | `Spacer`     | none          | ✅  | Identical.                                                                     |
 | `Expanded`   | one (slot)    | ✅  | `min-*: 0` applied automatically to avoid CSS flex overflow gotcha.            |
 | `Flexible`   | one (slot)    | ✅  | Identical; `FlexFit` enum (§1.12).                                             |
-| `Center`     | one (slot)    | ✅  | `widthFactor` / `heightFactor` deferred to v1.1.                               |
+| `Center`     | one (slot)    | ✅  | Convenience `Align`; factors on `Align` (§20), not `Center`.                 |
 | `Wrap`       | many (slot)   | ✅  | Uses `WrapAlignment` / `WrapCrossAlignment` enums (Flutter parity).            |
 | `Stack`      | many (slot)   | ✅  | Default `clipBehavior` is `Clip.hardEdge` (matches Flutter).                   |
 | `Positioned` | one (slot)    | ✅  | No `Positioned.fill` named ctor (use `top={0} right={0} bottom={0} left={0}`). |
 | `Text`       | string        | ✅  | Flat style props; `as` prop for semantic HTML; selectable by default; no rich text in v1. |
+| `Card`       | one (slot)    | 1.1 | Narrower than `Container`; default `elevation: 1`; shares `ContainerTag`.                |
+| `Divider`    | none          | 1.1 | `axis` unifies `Divider` + `VerticalDivider`; `<hr>` when horizontal.                    |
+| `Button`     | one (slot)    | 1.1 | First interactive widget; `onClick$`; `ButtonVariant` enum; `href` for links.            |
+| `Image`      | none          | 1.1 | `src` + `alt`/`decorative`; `BoxFit`; URL-only in v1.1.                                  |
+| `Visibility` | one (slot)    | 1.1 | `maintainSize` / `maintainSemantics`; no `replacement` slot yet.                         |
+| `Align`      | one (slot)    | 1.1 | General `Alignment`; `widthFactor` / `heightFactor`; distinct from `Container.alignment`. |
+| `AspectRatio`| one (slot)    | 1.1 | Required `aspectRatio`; CSS `aspect-ratio` property.                                    |
 
 ---
 
-## 17. Decisions log
+## 25. Decisions log
 
-All decisions resolved. No pending items.
+v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in §22.
 
 | #  | Decision                                                                                          | Resolution                                                              |
 | -- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -1543,8 +2544,8 @@ All decisions resolved. No pending items.
 | 5  | Overflow default on `Row` / `Column`                                                              | `visible`.                                                              |
 | 6  | Dev-time warnings (e.g. `Expanded` outside a flex parent)                                         | None in v1.                                                             |
 | 7  | `SizedBox`                                                                                        | Ship.                                                                   |
-| 8  | Component file/export layout                                                                      | One widget per folder (see §0.9).                                       |
-| 9  | Strings vs enums for prop values                                                                  | `const`-object enums (see §0.10).                                       |
+| 8  | Component file/export layout                                                                      | One widget per folder (see §0.10).                                      |
+| 9  | Strings vs enums for prop values                                                                  | `const`-object enums (see §0.11).                                       |
 | 10 | `Container.color` vs `Container.backgroundColor`                                                  | `backgroundColor`.                                                      |
 | 11 | Wrap in v1                                                                                        | Included (§11).                                                         |
 | 12 | Stack & Positioned in v1                                                                          | Included (§12–§13).                                                     |
@@ -1567,10 +2568,88 @@ All decisions resolved. No pending items.
 | 29 | **`Text.as` for semantic HTML**                                                                   | **Shipped in v1.** `TextTag` union; default `"span"` (§14).             |
 | 30 | **`Container.as` for semantic HTML**                                                              | **Shipped in v1.** `ContainerTag` union; default `"div"` (§5).          |
 | 31 | `BaseProps` accessibility passthrough                                                             | `role` + open `aria-*` / `data-*` index signatures (§2).                |
+| 32 | **`Card.margin` default** (§22.1)                                                                 | **No default margin** — caller opts in; document Flutter `margin: 4` in examples. |
+| 33 | **`Button` + `href`** (§22.2)                                                                     | **Automatically render `<a>`** when `href` is set (no `as="a"` required). |
+| 34 | **`ButtonVariant.elevated` in v1.1** (§22.3)                                                      | **Ship `elevated`** alongside `filled`, `outlined`, `text`.               |
+| 35 | **`Visibility` hidden behavior** (§22.4)                                                          | **Apply `inert`** (and `pointer-events: none`) when `visible={false}`.   |
+| 36 | **`Image` `BoxFit.fitWidth` / `fitHeight`** (§22.5)                                               | **Deferred** — v1.1 ships `fill`, `contain`, `cover`, `none`, `scaleDown` only. |
+| 37 | **v1.1 release grouping** (§22.6)                                                                 | **Single milestone** — all seven v1.1 widgets; implement `Button` last.  |
+| 38 | **`AspectRatio` invalid ratio** (§22.7)                                                            | **Clamp to `1`** and emit **dev warning** in development builds.          |
+| 39 | **`Button` loading state** (§22.8)                                                                | **Defer `loading` prop to v1.2** — keep v1.1 `Button` minimal.            |
+| 40 | **`Image` default `loading`** (§22.9)                                                             | **Default `ImageLoading.lazy`** (`loading="lazy"`); heroes opt into `eager`. |
+| 41 | **`Card` default semantic tag** (§22.10)                                                          | **Default `as="div"`**; consumers use `as="article"` when appropriate.  |
+| 42 | **`Align` implementation** (§22.11)                                                               | **CSS Grid** (`place-items`) — not absolute positioning.                  |
+| 43 | **v1.1 `Card` widget**                                                                            | Surface widget §15; shares decoration types; not a `Container` alias.     |
+| 44 | **v1.1 `Divider` widget**                                                                         | Unified `axis`; `<hr>` horizontal / `role="separator"` vertical.        |
+| 45 | **v1.1 `Button` widget**                                                                          | First interactive primitive; `InteractiveProps`; §0.7 conventions.      |
+| 46 | **`ButtonVariant` enum**                                                                          | `filled` / `outlined` / `text` / `elevated` (§1.22).                    |
+| 47 | **v1.1 `Image` widget**                                                                           | `src` + `alt`; `BoxFit`; `decorative` flag (§18).                       |
+| 48 | **`BoxFit` enum**                                                                                 | Maps to `object-fit` (§1.21).                                           |
+| 49 | **v1.1 `Visibility` widget**                                                                      | `maintainSize` + `maintainSemantics`; no `replacement` in v1.1.         |
+| 50 | **`ImageLoading` enum**                                                                           | v1.1 `loading` attribute (§1.23).                                       |
+| 51 | **`ButtonTag` + `InteractiveProps`**                                                              | §2; interactive widgets only.                                           |
+| 52 | **v1.1 `Align` widget**                                                                           | Layout positioning; `widthFactor`/`heightFactor`; §20.                  |
+| 53 | **v1.1 `AspectRatio` widget**                                                                     | Required ratio; CSS `aspect-ratio`; §21.                                |
+| 54 | **`ButtonSize` enum**                                                                             | Documented §1.24; **not** shipped until v1.2+.                          |
+| 55 | **Scrolling widgets**                                                                             | `SingleChildScrollView`, `ListView`, `GridView` → v1.2 roadmap §26.2.   |
+| 56 | **Forms + Theming**                                                                               | Roadmap-only §26.3–§26.4; no full API in v1.1.                          |
 
 ---
 
-## 18. Roadmap
+## 26. Roadmap
+
+### Version roadmap summary
+
+Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§21; scrolling §26.2; forms/theming §26.3–§26.4.
+
+#### v1.0
+
+- `Container`
+- `SizedBox`
+- `Row`
+- `Column`
+- `Spacer`
+- `Expanded`
+- `Flexible`
+- `Center`
+- `Wrap`
+- `Stack`
+- `Positioned`
+- `Text`
+
+#### v1.1
+
+- `Card`
+- `Divider`
+- `Button`
+- `Image`
+- `Visibility`
+- `Align`
+- `AspectRatio`
+
+#### v1.2
+
+- `SingleChildScrollView`
+- `ListView`
+- `GridView`
+- `ButtonSize` on `Button` (enum §1.24)
+
+#### Future
+
+- `Form`
+- `TextField`
+- `TextFormField`
+- `Checkbox`
+- `Radio`
+- `Switch`
+- `Dropdown`
+- `ThemeProvider`
+- `ThemeData`
+- `ColorScheme`
+- `TextTheme`
+- Plus: `Link`, `IconButton`, `Responsive<T>`, animation primitives (see §26.2–§26.4)
+
+---
 
 ### v1 — Core (this document)
 
@@ -1592,51 +2671,295 @@ All decisions resolved. No pending items.
 
 12. `Text` — typography.
 
-**Implementation sequence:**
+### v1.1 — Basic UI + layout (this document, §15–§21)
+
+**Presentational + interactive:**
+
+13. `Card` — elevated surface (§15).
+14. `Divider` — separators (§16).
+15. `Image` — `<img>` wrapper (§18).
+16. `Visibility` — show/hide child (§19).
+17. `Align` — child positioning (§20).
+18. `AspectRatio` — proportional sizing (§21).
+19. `Button` — first interactive primitive (§17); **implement last**.
+
+**Shared additions:** `BoxFit`, `ButtonVariant`, `ImageLoading` enums (§1.21–§1.23); `ButtonTag`, `InteractiveProps` (§2). `ButtonSize` (§1.24) documented only — ships v1.2.
+
+**Implementation sequence (v1 layout — complete):**
 
 1. Author `src/lib/_shared/enums.ts` from §1 (20 enums).
 2. Author `src/lib/_shared/types.ts` from §2.
 3. Author `src/lib/_shared/index.ts` re-exporting both.
 4. Implement widgets in the order listed above.
-5. Wire `src/index.ts` as the single package entry (§0.9).
+5. Wire `src/index.ts` as the single package entry (§0.10).
 6. Add per-widget unit tests + visual smoke tests in the playground (`src/routes/index.tsx`).
 
-### v1.1 — Polish (next milestone)
+**Implementation sequence (v1.1 — next):**
+
+1. Resolve open questions in §22.
+2. Extend `src/lib/_shared/enums.ts` with §1.21–§1.23.
+3. Extend `src/lib/_shared/types.ts` with `ButtonTag`, `InteractiveProps`; export `ContainerTag` from §2 centrally.
+4. Implement layout batch: `Align`, `AspectRatio`.
+5. Implement presentational batch: `Card`, `Divider`, `Image`, `Visibility`.
+6. Implement `Button` last.
+7. Update `src/index.ts` and playground screens.
+
+### v1.1 — Polish (after v1.1 core)
 
 - `Container.clip: boolean | Clip` (deferred per Decision #14).
 - `Container.transformOrigin: Alignment | string`.
 - Structured per-side borders (`borderTop`, `borderRight`, `borderBottom`, `borderLeft`).
-- `Center.widthFactor` / `Center.heightFactor`.
+- `Align` advanced positioning helpers (if any beyond §20).
 - `SizedBox.expand` / `SizedBox.shrink` named-constructor helpers (`SizedBox.expand()`, `SizedBox.shrink()`).
 - `Positioned.fill` / `Positioned.directional` / `Positioned.fromRect` named-constructor helpers.
 - `Text.rich` / `TextSpan` (nested `<Text>` for rich content).
 
+### Scrolling widgets (v1.2)
+
+High-priority — most apps need scrollable regions. **Roadmap-level API** (not final); full spec after v1.1 ships.
+
+#### `SingleChildScrollView`
+
+**Purpose:** Scroll a single child when content overflows the viewport (forms, long detail pages). Flutter's [`SingleChildScrollView`](https://api.flutter.dev/flutter/widgets/SingleChildScrollView-class.html).
+
+**Proposed API (direction):**
+
+```ts
+export interface SingleChildScrollViewProps extends BaseProps {
+  axis?: Axis;              // default Axis.vertical
+  reverse?: boolean;
+  padding?: EdgeInsets;
+  // scrollController — defer (imperative scroll is v2)
+}
+```
+
+**Usage (illustrative):**
+
+```tsx
+<SingleChildScrollView padding={16}>
+  <Column gap={12}>
+    <Text as="h1">Profile</Text>
+    {/* long form… */}
+  </Column>
+</SingleChildScrollView>
+```
+
+**Flutter equivalent:**
+
+```dart
+SingleChildScrollView(
+  padding: EdgeInsets.all(16),
+  child: Column(children: […]),
+)
+```
+
+**Notes:**
+
+- Native `overflow: auto` on a wrapper `<div>`; SSR renders scroll container without JS.
+- Pair with `Column` / `Row` — not a replacement for `ListView` virtualization.
+
+**Open questions:**
+
+| ID | Question | Options |
+| -- | -------- | ------- |
+| S1 | **Scrollbar styling** | (A) System scrollbars only. (B) Optional `scrollbar` prop. |
+| S2 | **`scrollDirection` naming** | (A) Reuse `Axis`. (B) Separate `ScrollDirection` enum. |
+| S3 | **Nested scroll** | Document as caller responsibility or warn in dev? |
+
+---
+
+#### `ListView`
+
+**Purpose:** Scrollable list of children; future support for lazy/builder patterns. Flutter's [`ListView`](https://api.flutter.dev/flutter/widgets/ListView-class.html).
+
+**Proposed API (direction):**
+
+```ts
+export interface ListViewProps extends BaseProps {
+  axis?: Axis;
+  reverse?: boolean;
+  padding?: EdgeInsets;
+  gap?: Length;           // extension: space between children
+  // v1.2: children only (slot)
+  // v2: itemBuilder, itemCount (builder pattern)
+}
+```
+
+**Usage (illustrative):**
+
+```tsx
+<ListView padding={8} gap={4}>
+  {items.map((item) => (
+    <Card key={item.id} padding={12}>
+      <Text>{item.title}</Text>
+    </Card>
+  ))}
+</ListView>
+```
+
+**Flutter equivalent:**
+
+```dart
+ListView.builder(
+  itemCount: items.length,
+  itemBuilder: (context, i) => ListTile(title: Text(items[i].title)),
+)
+```
+
+**Notes:**
+
+- v1.2 **non-virtualized** (all children in DOM) — acceptable for moderate lists; document limits.
+- Virtualization (`ListView.builder` parity) is **v2** (needs `useVisibleTask$` / intersection observer).
+
+**Open questions:**
+
+| ID | Question | Options |
+| -- | -------- | ------- |
+| L1 | **v1.2 scope: builder or children-only?** | (A) Slot children only. (B) Add `itemCount` + `itemBuilder$` in v1.2. |
+| L2 | **Separator support** | (A) Manual `<Divider />` between items. (B) `separatorBuilder$` prop. |
+| L3 | **Pull-to-refresh** | Defer to v2? |
+
+---
+
+#### `GridView`
+
+**Purpose:** Scrollable grid of children. Flutter's [`GridView`](https://api.flutter.dev/flutter/widgets/GridView-class.html).
+
+**Proposed API (direction):**
+
+```ts
+export interface GridViewProps extends BaseProps {
+  columns?: number;       // fixed cross-axis count (v1.2)
+  gap?: Length;
+  padding?: EdgeInsets;
+  axis?: Axis;            // scroll direction, default vertical
+  // v2: crossAxisCount, maxCrossAxisExtent, childAspectRatio
+}
+```
+
+**Usage (illustrative):**
+
+```tsx
+<GridView columns={2} gap={16} padding={16}>
+  {products.map((p) => (
+    <AspectRatio key={p.id} aspectRatio={1}>
+      <Image src={p.src} alt={p.name} width="100%" height="100%" fit={BoxFit.cover} />
+    </AspectRatio>
+  ))}
+</GridView>
+```
+
+**Flutter equivalent:**
+
+```dart
+GridView.count(
+  crossAxisCount: 2,
+  crossAxisSpacing: 16,
+  mainAxisSpacing: 16,
+  children: […],
+)
+```
+
+**Notes:**
+
+- CSS `display: grid` inside scroll container for v1.2.
+- `childAspectRatio` pairs with `AspectRatio` widget or `grid-auto-rows`.
+
+**Open questions:**
+
+| ID | Question | Options |
+| -- | -------- | ------- |
+| G1 | **Fixed `columns` vs `maxCrossAxisExtent` first?** | (A) `columns` only in v1.2. (B) Both. |
+| G2 | **Responsive columns** | Defer to `Responsive<T>` (v2)? |
+
+---
+
+### Forms (future)
+
+Roadmap-level only — **no frozen prop tables**. Full design after scrolling (v1.2) and theming direction are settled.
+
+| Widget | Purpose | Proposed API direction | Flutter equivalent |
+| ------ | ------- | ---------------------- | ------------------ |
+| `Form` | Groups fields; validation scope | `onSubmit$`, `autovalidateMode?` enum; slotted fields | [`Form`](https://api.flutter.dev/flutter/widgets/Form-class.html) |
+| `TextField` | Single-line / obscure text input | `value`, `onInput$`, `placeholder`, `type`, `disabled`, `maxLength` | [`TextField`](https://api.flutter.dev/flutter/material/TextField-class.html) |
+| `TextFormField` | `TextField` + `Form` integration | Extends field props + `validator$`, `required` | [`TextFormField`](https://api.flutter.dev/flutter/material/TextFormField-class.html) |
+| `Checkbox` | Boolean toggle | `checked`, `onChange$`, `label` slot or `aria-label` | [`Checkbox`](https://api.flutter.dev/flutter/material/Checkbox-class.html) |
+| `Radio` | Exclusive choice in group | `name`, `value`, `checked`, `onChange$` | [`Radio`](https://api.flutter.dev/flutter/material/Radio-class.html) |
+| `Switch` | On/off control | `checked`, `onChange$` | [`Switch`](https://api.flutter.dev/flutter/material/Switch-class.html) |
+| `Dropdown` | Select from options | `value`, `options`, `onChange$` (native `<select>` first) | [`DropdownButton`](https://api.flutter.dev/flutter/material/DropdownButton-class.html) |
+
+**Validation considerations (future):**
+
+- Client-side validators as `validator$` QRLs returning `string | undefined` (error message).
+- `Form`-level submit blocking when any field invalid; `aria-invalid` + `aria-describedby` linking to error `Text`.
+- Server Actions / API errors passed via props, not global store (Principle #5).
+
+**Accessibility considerations (future):**
+
+- Real `<input>`, `<select>`, `<textarea>`, `<button type="submit">` — not div-based inputs.
+- Labels via slotted `<Text as="label">` + `htmlFor` / `id` pairing convention documented.
+- Keyboard: tab order, Space/Enter on checkbox/radio/switch.
+
+**Future extensibility notes:**
+
+- `FormField<T>` generic wrapper pattern (Flutter parity).
+- Masking, OTP, autocomplete attributes — v2+.
+- Depends on **theming** for consistent focus/error colors (§26.4).
+
+---
+
+### Theming (future)
+
+Roadmap-level only — informs `ButtonSize`, `Divider` colors, and form focus rings. **No public `ThemeProvider` API in v1.1.**
+
+| Piece | Purpose | Flutter equivalent |
+| ----- | ------- | ------------------ |
+| `ThemeProvider` | Supply theme to descendant widgets | [`Theme`](https://api.flutter.dev/flutter/material/Theme-class.html) / `InheritedWidget` |
+| `ThemeData` | Bundle of visual defaults | [`ThemeData`](https://api.flutter.dev/flutter/material/ThemeData-class.html) |
+| `ColorScheme` | Semantic colors (primary, surface, error, …) | [`ColorScheme`](https://api.flutter.dev/flutter/material/ColorScheme-class.html) |
+| `TextTheme` | Typography scale (display, body, label, …) | [`TextTheme`](https://api.flutter.dev/flutter/material/TextTheme-class.html) |
+
+**Proposed architecture (direction):**
+
+1. **CSS custom properties first** — `ThemeProvider` renders a wrapper that sets `--qfu-primary`, `--qfu-surface`, `--qfu-on-surface`, etc. Widget CSS modules consume `var(--qfu-*)`. SSR-friendly: theme is markup + CSS, no runtime style injection (Principle #4, #7).
+2. **Optional context for overrides** — lightweight Qwik context (`useTheme()`) for programmatic access (e.g. charts), not required for static pages.
+3. **Dark mode** — `colorScheme` prop or `media` strategy documented; default `prefers-color-scheme` with opt-in class.
+4. **Widget defaults** — `Button`, `Card`, `Divider`, `Text` read tokens when props omitted; explicit props always win (§0.6).
+
+**Future considerations:**
+
+- **No theme in v1.1** avoids half-migrated widgets; hard-coded neutrals until provider lands.
+- Breaking risk: introducing defaults later must preserve explicit prop overrides (non-breaking).
+- May split **`ThemeData`** into `export type` only at first; provider ships when ≥3 widgets consume tokens.
+- **Material 3** color roles (`surfaceContainer`, `onSurfaceVariant`) vs M2 simplification — decision deferred.
+
+---
+
 ### v2 — Expansion (future)
 
-- **Interactive primitives:** `Button`, `Link`, `Tappable` — addresses §15.6.
-- **Responsive prop shape:** `Responsive<T>` wrapper for breakpoint-aware values — addresses §15.7 and Principle #9.
-- **Scrolling:** `ListView`, `GridView`, `SingleChildScrollView`.
-- **Form primitives:** `Input`, `Checkbox`, `Radio`, `Switch`.
-- **Theming:** `ThemeProvider`, design tokens.
+- **Interactive primitives:** `Link`, `IconButton`, `Tappable` — extends §17 `Button` patterns.
+- **Responsive prop shape:** `Responsive<T>` wrapper — addresses §23.7 and Principle #9.
+- **Virtualized lists / grids** — builder APIs for `ListView` / `GridView`.
 - **Animation:** `AnimatedContainer`, `AnimatedOpacity`, transition primitives.
 
 ### Tracking
 
 | Status | Items                                                                                                                                  |
 | ------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **v1** | 12 widgets, 20 enums, 9 shared types (incl. `ContainerTag`, `TextTag`), BaseProps with ARIA/data passthrough, semantic `as` on Container & Text. |
-| v1.1   | Container `clip`/`transformOrigin`/structured-per-side-border, Center factors, named ctors, Text.rich.                                 |
-| v2     | Interactive primitives, Responsive\<T\>, Scrolling, Form primitives, Theming, Animation.                                               |
+| **v1.0** | 12 layout/typography widgets, 20 enums, shared types incl. `ContainerTag`, `TextTag`. |
+| **v1.1** | +7 widgets (§15–§21); +3 enums shipped (`BoxFit`, `ButtonVariant`, `ImageLoading`); `InteractiveProps`; `ButtonSize` doc-only (§1.24). |
+| **v1.2** | Scrolling §26.2; `ButtonSize` implementation; polish items. |
+| **Future** | Forms §26.3, Theming §26.4, virtualization, `Link`, `Responsive<T>`, animation. |
 
 ---
 
-## 19. Final implementation checklist
+## 27. Final implementation checklist
 
-Concrete, line-item to-do list for v1. Each box represents a single PR-sized unit of work. Work top-to-bottom; nothing below a checkbox should start until that box is checked.
+Concrete, line-item to-do list. Work top-to-bottom within each phase.
 
 ### Phase 1 — Shared foundation
 
-- [ ] `src/lib/_shared/enums.ts` — author all 20 const-object enums from §1:
+- [ ] `src/lib/_shared/enums.ts` — author all v1 enums from §1 (20) + v1.1 enums (§1.21–§1.23):
   - [ ] `MainAxisAlignment`, `CrossAxisAlignment`, `MainAxisSize` (§1.1–§1.3)
   - [ ] `Axis`, `WrapAlignment`, `WrapCrossAlignment` (§1.4–§1.6)
   - [ ] `TextDirection`, `VerticalDirection` (§1.7–§1.8)
@@ -1648,7 +2971,7 @@ Concrete, line-item to-do list for v1. Each box represents a single PR-sized uni
   - [ ] `BaseProps` (with `AriaAttributes` + `DataAttributes` template-literal indices, `role`)
   - [ ] `BoxShadow`, `Gradient`, `BorderSide`
   - [ ] `FlexProps`
-  - [ ] `ContainerTag`, `TextTag` tag-union types
+  - [ ] `ContainerTag`, `TextTag`, `ButtonTag`, `InteractiveProps` (§2)
 - [ ] `src/lib/_shared/index.ts` — barrel re-exports for both files.
 - [ ] Unit-test the shared layer: enum identity (`MainAxisAlignment.spaceBetween === "space-between"`), `EdgeInsets` union narrowing, `BaseProps` ARIA/data attribute typechecking.
 
@@ -1678,13 +3001,28 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 
 - [ ] `src/lib/text/{text.tsx, types.ts, index.ts}` — implement `TextProps` from §14, including `as` prop. Reset browser default styles for non-`span` tags so our typography props remain the source of truth.
 
-### Phase 6 — Package wiring
+### Phase 6 — v1.1 basic UI + layout
 
-- [ ] `src/index.ts` — single flat package entry per §0.9. Re-export every component, every `*Props` type, and `* from "./lib/_shared"`.
+> **Gate:** §22 open questions approved.
+
+- [ ] Extend `_shared/enums.ts` — `BoxFit`, `ButtonVariant`, `ImageLoading` (§1.21–§1.23).
+- [ ] Extend `_shared/types.ts` — `ButtonTag`, `InteractiveProps`; centralize `ContainerTag` export (§2).
+- [ ] `src/lib/align/` — `AlignProps` from §20.
+- [ ] `src/lib/aspect-ratio/` — `AspectRatioProps` from §21.
+- [ ] `src/lib/card/` — `CardProps` from §15.
+- [ ] `src/lib/divider/` — `DividerProps` from §16.
+- [ ] `src/lib/image/` — `ImageProps` from §18 (`BoxFit` subset per §22.5 if deferred).
+- [ ] `src/lib/visibility/` — `VisibilityProps` from §19.
+- [ ] `src/lib/button/` — `ButtonProps` from §17 (implement last).
+- [ ] Playground screens for all seven v1.1 widgets.
+
+### Phase 7 — Package wiring
+
+- [ ] `src/index.ts` — single flat package entry per §0.10. Re-export every component, every `*Props` type, and `* from "./lib/_shared"`.
 - [ ] Verify tree-shaking: an app importing only `Row` should not pull in `Text` or its enums.
 - [ ] Verify `package.json` `"main"`, `"module"`, `"types"`, and `"exports"` fields all point at `src/index.ts` (or its build output). No subpath exports.
 
-### Phase 7 — Quality gates
+### Phase 8 — Quality gates
 
 - [ ] Per-widget unit tests covering:
   - Default props produce expected DOM + classes.
@@ -1696,10 +3034,10 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 - [ ] Accessibility check (Principle #3): `axe` clean on every playground screen with default props.
 - [ ] Bundle-size sanity (Principle #7): single-widget import + tree-shake should produce < 1 KB gzipped per layout widget (excluding shared baseline).
 
-### Phase 8 — Release
+### Phase 9 — Release
 
 - [ ] Update `README.md` with install + minimal usage example.
 - [ ] Add `CHANGELOG.md` with v1.0.0 entry referencing this document as the source of truth.
 - [ ] Tag `v1.0.0`.
 
-> Out of scope for this checklist: v1.1 items (see §18) and v2 items (interactive primitives, responsive shape, etc.). Those get their own checklists when their milestones open.
+> Out of scope for this checklist: v1.2 scrolling (§26.2), forms/theming (§26.3–§26.4), and v2 expansion. Separate checklists when those milestones open.
