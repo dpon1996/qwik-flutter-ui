@@ -1,0 +1,11 @@
+/*
+ * Card — base structure.
+ *
+ * Per-instance decoration (padding, colors, radius, shadow) is applied via
+ * inline `style` from card.tsx so SSR renders complete markup.
+ */
+
+.card {
+  box-sizing: border-box;
+  display: block;
+}

@@ -22,3 +22,4 @@ export * from "./lib/wrap";
 export * from "./lib/stack";
 export * from "./lib/positioned";
 export * from "./lib/text";
+export * from "./lib/card";
