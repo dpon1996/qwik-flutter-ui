@@ -1,0 +1,37 @@
+/*
+ * Divider — base structure.
+ *
+ * Dynamic dimensions and colors are applied via inline `style` from
+ * divider.tsx for SSR-friendly output.
+ */
+
+.horizontal {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  align-self: stretch;
+  flex-shrink: 0;
+  border: none;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+.vertical {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: stretch;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.verticalLine {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}

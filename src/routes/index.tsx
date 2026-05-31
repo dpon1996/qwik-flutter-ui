@@ -1,27 +1,28 @@
 import { component$ } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
-import { FontWeight, TextAlign, TextDecoration, TextDecorationStyle, TextOverflow, TextTransform } from "~/lib/_shared";
-import { Container } from "~/lib/container/container";
+
+import { Axis } from "~/lib/_shared";
+import { Column } from "~/lib/column";
+import { Divider } from "~/lib/divider";
+import { Row } from "~/lib/row";
 import { Text } from "~/lib/text";
 
 export default component$(() => {
   return (
-    <Container backgroundColor="#010101" maxWidth={500} padding={[16, 32, 50, 25]}>
-      <Text maxLines={2}
-        overflow={TextOverflow.ellipsis}
-        color="#fff"
-        fontSize={20}
-        fontWeight={FontWeight.bold}
-        fontFamily="Arial, sans-serif"
-        letterSpacing={1}
-        wordSpacing={1}
-        lineHeight={1.5}
-        decoration={TextDecoration.underline}
-        decorationColor="#fff"
-        decorationStyle={TextDecorationStyle.dashed}
-        textTransform={TextTransform.uppercase}
-        textAlign={TextAlign.center}  >Hello World this is a test message that should be truncated</Text>
-    </Container>
+    <Column gap={0} >
+      <Text>Section A</Text>
+      <Divider />
+      <Text>Section B</Text>
+
+      <Divider indent={16} endIndent={16} color="#ccc" thickness={2} />
+
+      <Row style={{ height: 120 }}>
+        <Text>Left</Text>
+        <Divider axis={Axis.vertical} size="100%" />
+        <Text>Right</Text>
+      </Row>
+
+    </Column>
   );
 });
 
