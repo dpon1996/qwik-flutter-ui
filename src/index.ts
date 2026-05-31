@@ -13,3 +13,4 @@ export * from "./lib/_shared";
 export * from "./lib/container";
 export * from "./lib/sized-box";
 export * from "./lib/row";
+export * from "./lib/column";

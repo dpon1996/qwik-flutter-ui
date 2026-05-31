@@ -53,19 +53,19 @@ import {
   MainAxisSize,
   VerticalDirection,
 } from "../_shared";
-import type { Length } from "../_shared";
+import { toLength } from "../_shared/internal";
 
 import styles from "./row.module.css";
 import type { RowProps } from "./types";
-
-/** Convert a `Length` to a CSS string. Numbers become `<n>px`. */
-const toLength = (v: Length): string =>
-  typeof v === "number" ? `${v}px` : v;
 
 /**
  * When `verticalDirection === up`, the cross axis is reversed. For the
  * symmetric values (center/stretch/baseline) this is a no-op; for
  * start/end we swap them so the resulting visual order matches Flutter.
+ *
+ * Row-specific: Row's cross axis is vertical, so flipping verticalDirection
+ * flips the cross axis. (Column inverts the main axis instead — handled
+ * differently via `flex-direction: column-reverse`.)
  */
 const flipCrossAxis = (v: CrossAxisAlignment): CrossAxisAlignment => {
   if (v === CrossAxisAlignment.start) return CrossAxisAlignment.end;
