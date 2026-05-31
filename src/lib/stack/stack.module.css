@@ -1,0 +1,76 @@
+/*
+ * Stack — layered layout container.
+ *
+ * Implementation strategy:
+ * - `position: relative` is always present for Flutter parity.
+ * - `display: grid` with all direct children assigned to the same grid cell
+ *   (`grid-area: 1 / 1`) overlays them.
+ * - Alignment classes map Flutter `Alignment` values to grid item alignment.
+ * - Clip classes map `Clip` enum values to CSS overflow behavior.
+ */
+
+.stack {
+  position: relative;
+  display: grid;
+}
+
+/* Layer all direct children on top of each other. */
+.stack > * {
+  grid-area: 1 / 1;
+}
+
+/* ---- alignment mapping (Alignment -> justify-items + align-items) ---- */
+.alignment-top-left {
+  justify-items: start;
+  align-items: start;
+}
+
+.alignment-top-center {
+  justify-items: center;
+  align-items: start;
+}
+
+.alignment-top-right {
+  justify-items: end;
+  align-items: start;
+}
+
+.alignment-center-left {
+  justify-items: start;
+  align-items: center;
+}
+
+.alignment-center {
+  justify-items: center;
+  align-items: center;
+}
+
+.alignment-center-right {
+  justify-items: end;
+  align-items: center;
+}
+
+.alignment-bottom-left {
+  justify-items: start;
+  align-items: end;
+}
+
+.alignment-bottom-center {
+  justify-items: center;
+  align-items: end;
+}
+
+.alignment-bottom-right {
+  justify-items: end;
+  align-items: end;
+}
+
+/* ---- clip behavior mapping (Clip -> overflow) ---- */
+.clip-none {
+  overflow: visible;
+}
+
+.clip-hard-edge,
+.clip-anti-alias {
+  overflow: hidden;
+}
