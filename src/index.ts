@@ -2,7 +2,9 @@
  * Public entry point for `qwik-flutter-ui`.
  *
  * Anything re-exported from this file is part of the public API and is
- * subject to semver guarantees. New components must be added here.
+ * subject to semver guarantees. Widgets will be added here as they land
+ * (see docs/API_DESIGN.md §19 implementation checklist).
  */
-export * from "./lib/container";
-export * from "./lib/text";
+
+// Shared enums + types (Phase 1 of the implementation checklist).
+export * from "./lib/_shared";
