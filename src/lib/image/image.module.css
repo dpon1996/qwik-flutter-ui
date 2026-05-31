@@ -1,0 +1,12 @@
+/*
+ * Image — base structure.
+ *
+ * Sizing, fit, and position are applied via inline `style` from image.tsx
+ * for SSR-friendly markup.
+ */
+
+.image {
+  display: block;
+  max-width: 100%;
+  border: none;
+}
