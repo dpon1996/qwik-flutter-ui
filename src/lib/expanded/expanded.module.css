@@ -1,0 +1,46 @@
+/*
+ * Expanded — propagates "fill" to the child.
+ *
+ * Background: in Flutter, `Expanded` passes tight constraints to its child
+ * so the child fills the allocated space along the main axis. CSS has no
+ * equivalent constraint-propagation system: applying `flex: 1 1 0` to the
+ * Expanded element makes *Expanded* fill the leftover space, but its child
+ * (e.g. an empty `<div>` from `Container` with no height/width) still sizes
+ * to its content.
+ *
+ * Fix: turn Expanded itself into a flex container that inherits its
+ * parent's direction, and force the immediate child to fill the main axis.
+ *
+ *   .expanded
+ *     display: flex
+ *     flex-direction: inherit   ← matches parent Row / Column automatically
+ *     align-items: stretch      ← child fills cross axis (CSS default, explicit)
+ *
+ *   .expanded > *
+ *     flex: 1 1 auto            ← child fills main axis from its natural size
+ *     min-width: 0; min-height: 0  ← lets the child shrink past content size
+ *
+ * `flex: 1 1 auto` (vs `1 1 0`) preserves any explicit width/height the
+ * child sets on its cross axis: an Expanded child with `height={32}` in a
+ * Row still gets exactly 32px tall, while still expanding to fill the
+ * row's main-axis allocation.
+ *
+ * The per-instance `flex: <flex> 1 0` and `min-*: 0` on Expanded itself
+ * are still applied as inline `style` from expanded.tsx — see the spec
+ * note in API_DESIGN.md §8.
+ */
+
+.expanded {
+  display: flex;
+  flex-direction: inherit;
+  align-items: stretch;
+}
+
+/* Force the immediate child to fill Expanded's main-axis allocation.
+ * Cross-axis sizing is left to the child's own width/height + the
+ * parent's align-items (defaults to stretch above). */
+.expanded > * {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}

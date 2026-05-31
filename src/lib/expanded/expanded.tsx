@@ -9,25 +9,37 @@
  *   Expanded == Flexible({ fit: FlexFit.tight }).
  *
  * Implementation notes:
- *  - Inline `style` only — no CSS module. Three CSS declarations, the
- *    first dynamic (`flex` grow factor) and the other two constant.
- *    Per-instance + tiny ⇒ inline keeps the code lean (Principle #7).
+ *  - The spec's "Internally" CSS makes *Expanded itself* fill the
+ *    leftover space inside its Row/Column parent. That alone is not
+ *    enough for Flutter parity: in Flutter, the child of Expanded also
+ *    fills the allocated space because tight constraints propagate.
+ *    CSS doesn't propagate constraints, so we additionally turn Expanded
+ *    into a flex container that inherits its parent's direction and
+ *    forces the immediate child to fill via `> * { flex: 1 1 auto }`.
+ *    Those rules live in `expanded.module.css` (need a child selector,
+ *    not expressible inline).
+ *  - The dynamic per-instance bit (`flex: <flex> 1 0` and `min-*: 0`) is
+ *    still applied as inline `style` so the SSR markup directly reflects
+ *    the spec note.
  *  - `flex: <flex> 1 0` is the CSS shorthand for
  *    `flex-grow: <flex>; flex-shrink: 1; flex-basis: 0`. Used verbatim
  *    to match the spec wording — Spacer (§7) uses the individual long-
  *    hand because *its* spec note writes the longhand. Functionally
  *    equivalent.
- *  - `min-width: 0; min-height: 0` prevents the classic CSS flex-overflow
- *    surprise: a flex item's default `min-*` is `auto` (≥ intrinsic
- *    content size), which stops shrinking below the content's natural
- *    minimum. Setting these to `0` lets `Expanded` shrink as far as
- *    needed, matching Flutter's "take exactly your assigned share."
+ *  - `min-width: 0; min-height: 0` on Expanded prevents the classic CSS
+ *    flex-overflow surprise (default `min-*: auto` ≥ intrinsic content
+ *    size). The same pair on `> *` lets the child shrink past its own
+ *    intrinsic content size, matching Flutter's "take exactly your
+ *    assigned share" semantics for long-content children.
  *  - `<Slot />` for a single child (the spec says "Single child").
- *    Multiple children are technically allowed — they'll be siblings
- *    inside the Expanded wrapper — but the idiomatic use is one child.
- *  - Outside a flex parent: all five properties are silently ignored by
- *    the browser (flex/min-* only apply to flex items). No JS check,
- *    no dev-time warning (v1).
+ *    Multiple children are technically allowed — they'll each take an
+ *    equal share via `flex: 1 1 auto` — but the idiomatic use is one.
+ *  - Outside a flex parent: all five inline properties are silently
+ *    ignored by the browser. The CSS-module rules still take effect
+ *    (turning Expanded into a flex container with one stretched child),
+ *    which means an Expanded outside Row/Column now sizes its child to
+ *    fill Expanded's own intrinsic size — a benign no-op for typical
+ *    usage. No JS check, no dev-time warning (v1).
  *  - The user's `class` and `style` are merged with internal ones with
  *    user values winning (§0.6).
  *  - `BaseProps` passthrough (`id`, `role`, `aria-*`, `data-*`) is
@@ -36,6 +48,7 @@
 
 import { Slot, component$, type CSSProperties } from "@builder.io/qwik";
 
+import styles from "./expanded.module.css";
 import type { ExpandedProps } from "./types";
 
 export const Expanded = component$<ExpandedProps>((props) => {
@@ -53,8 +66,10 @@ export const Expanded = component$<ExpandedProps>((props) => {
     ? { ...computed, ...(userStyle as CSSProperties) }
     : computed;
 
+  const classes = [styles.expanded, className].filter(Boolean).join(" ");
+
   return (
-    <div class={className} style={style} {...rest}>
+    <div class={classes} style={style} {...rest}>
       <Slot />
     </div>
   );
