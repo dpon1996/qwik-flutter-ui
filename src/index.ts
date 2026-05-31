@@ -26,3 +26,4 @@ export * from "./lib/card";
 export * from "./lib/divider";
 export * from "./lib/image";
 export * from "./lib/visibility";
+export * from "./lib/align";
