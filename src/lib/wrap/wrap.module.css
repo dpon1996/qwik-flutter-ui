@@ -1,0 +1,100 @@
+/*
+ * Wrap — multi-run flex layout.
+ *
+ * Mapping from API_DESIGN §11:
+ * - direction          -> flex-direction
+ * - alignment          -> justify-content
+ * - runAlignment       -> align-content
+ * - crossAxisAlignment -> align-items
+ * - clipBehavior       -> overflow
+ *
+ * `spacing` / `runSpacing` are applied inline from wrap.tsx because they
+ * depend on both `direction` and per-instance Length values.
+ */
+
+.wrap {
+  display: flex;
+}
+
+/* Main-axis direction. */
+.direction-horizontal {
+  flex-direction: row;
+}
+
+.direction-vertical-down {
+  flex-direction: column;
+}
+
+.direction-vertical-up {
+  flex-direction: column-reverse;
+}
+
+/* Run direction. */
+.wrap-normal {
+  flex-wrap: wrap;
+}
+
+.wrap-reverse {
+  flex-wrap: wrap-reverse;
+}
+
+/* alignment -> justify-content */
+.alignment-start {
+  justify-content: flex-start;
+}
+.alignment-end {
+  justify-content: flex-end;
+}
+.alignment-center {
+  justify-content: center;
+}
+.alignment-space-between {
+  justify-content: space-between;
+}
+.alignment-space-around {
+  justify-content: space-around;
+}
+.alignment-space-evenly {
+  justify-content: space-evenly;
+}
+
+/* runAlignment -> align-content */
+.run-start {
+  align-content: flex-start;
+}
+.run-end {
+  align-content: flex-end;
+}
+.run-center {
+  align-content: center;
+}
+.run-space-between {
+  align-content: space-between;
+}
+.run-space-around {
+  align-content: space-around;
+}
+.run-space-evenly {
+  align-content: space-evenly;
+}
+
+/* crossAxisAlignment -> align-items */
+.cross-start {
+  align-items: flex-start;
+}
+.cross-end {
+  align-items: flex-end;
+}
+.cross-center {
+  align-items: center;
+}
+
+/* clipBehavior -> overflow */
+.clip-none {
+  overflow: visible;
+}
+
+.clip-hard-edge,
+.clip-anti-alias {
+  overflow: hidden;
+}
