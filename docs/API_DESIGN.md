@@ -620,7 +620,47 @@ export const ImageLoading = {
 
 **Default:** `ImageLoading.lazy`.
 
-### 1.24 `ButtonSize` — `Button` (planned, not v1.1)
+### 1.24 `ImagePlaceholder` — `Image`
+
+Built-in placeholder surface shown until the `<img>` fires `load`. Not a Flutter concept; web/SSR pattern.
+
+```ts
+export const ImagePlaceholder = {
+  none:     "none",
+  skeleton: "skeleton",
+  shimmer:  "shimmer",
+} as const;
+```
+
+| Value      | Behavior                                              |
+| ---------- | ----------------------------------------------------- |
+| `none`     | No placeholder layer (plain `<img>` only).            |
+| `skeleton` | Neutral solid fill in the image box.                  |
+| `shimmer`  | Animated gradient placeholder (loading affordance).   |
+
+**Default:** `ImagePlaceholder.none`.
+
+### 1.25 `ImageError` — `Image`
+
+Built-in UI when the `<img>` fires `error`. Mirrors Flutter's `errorBuilder` as enum presets (not a custom slot).
+
+```ts
+export const ImageError = {
+  none: "none",
+  icon: "icon",
+  text: "text",
+} as const;
+```
+
+| Value  | Behavior                                                                 |
+| ------ | ------------------------------------------------------------------------ |
+| `none` | Browser default broken-image affordance; `<img>` stays visible.          |
+| `icon` | Built-in icon glyph + `role="alert"` (decorative icon, announced label). |
+| `text` | Short visible message + `role="alert"`. **Default.**                     |
+
+**Default:** `ImageError.text`.
+
+### 1.26 `ButtonSize` — `Button` (planned, not v1.1)
 
 Density presets for `Button`. **Specified for roadmap consistency; not exported until v1.2+** (see §17 future extensibility).
 
@@ -1923,7 +1963,11 @@ Exact values will align with `ThemeData` once theming lands (§27.4).
 
 ## 18. `Image`
 
-Displays an image from a URL. Flutter's [`Image.network`](https://api.flutter.dev/flutter/widgets/Image/Image.network.html) / [`Image.asset`](https://api.flutter.dev/flutter/widgets/Image/Image.asset.html) — v1.1 is **URL-only** (`src`).
+Displays an image from a URL via a semantic `<img>`. Flutter's [`Image.network`](https://api.flutter.dev/flutter/widgets/Image/Image.network.html) / [`Image.asset`](https://api.flutter.dev/flutter/widgets/Image/Image.asset.html). v1.1 is **URL-only** (`src`) — no asset pipeline.
+
+Wraps the `<img>` in a **positioned container** so **placeholder** and **error** UI (enum presets or optional **QRL builders**) can occupy the same box without named slots or separate widgets.
+
+> **Implementation status:** Core `<img>` props ship in v1.1; **`placeholder`**, **`error`**, **`minWidth`**, and **`minHeight`** ship per this spec (§1.24–§1.25).
 
 ### Props
 
@@ -1943,39 +1987,119 @@ export interface ImageProps extends BaseProps {
 
   width?: Length;
   height?: Length;
+  minWidth?: Length;
+  minHeight?: Length;
   fit?: BoxFit;
 
   /** CSS `object-position`. Default `"center"`. */
   alignment?: string;
 
-  /** Color wash / tint via CSS `opacity` on a filter layer — defer complex blend modes. */
+  /** `0..1` opacity on the `<img>` element. */
   opacity?: number;
 
-  /** v1.1 — native `loading` attribute. */
+  /** Native lazy-loading hint. Default `ImageLoading.lazy` (decision #40). */
   loading?: ImageLoading;
+
+  /** Built-in placeholder until `load`. Default `ImagePlaceholder.none` (§1.24). Ignored when `placeholderBuilder$` is set. */
+  placeholder?: ImagePlaceholder;
+
+  /** Custom placeholder until `load`. Takes precedence over `placeholder`. */
+  placeholderBuilder$?: ImagePlaceholderBuilder;
+
+  /** Built-in UI on `error`. Default `ImageError.text` (§1.25). Ignored when `errorBuilder$` is set. */
+  error?: ImageError;
+
+  /** Custom UI on `error`. Takes precedence over `error`. */
+  errorBuilder$?: ImageErrorBuilder;
 }
+
+/** QRL returning JSX for the loading state. */
+export type ImagePlaceholderBuilder = QRL<() => unknown>;
+
+/** QRL receiving the native `error` event. */
+export type ImageErrorBuilder = QRL<(event: Event) => unknown>;
 ```
 
-| Prop          | Default              | Notes                                                |
-| ------------- | -------------------- | ---------------------------------------------------- |
-| `src`         | (required)           | Passed to `<img src>`.                               |
-| `alt`         | —                    | Required if `decorative` is not `true`.              |
-| `decorative`  | `false`              | Decorative images must not duplicate nearby text.    |
-| `fit`         | `BoxFit.scaleDown`   | Maps to `object-fit` (§1.21).                        |
-| `alignment`   | `"center"`           | `object-position`.                                   |
-| `width`/`height` | —                 | `Length`.                                            |
-| `opacity`     | —                    | `0..1` on the `<img>` element.                       |
-| `loading`     | `ImageLoading.lazy`  | v1.1 enum (§1.23).                                   |
-| _base props_  | —                    | See §0.6.                                            |
+| Prop          | Default                   | Notes                                                |
+| ------------- | ------------------------- | ---------------------------------------------------- |
+| `src`         | (required)                | Passed to `<img src>`.                               |
+| `alt`         | —                         | Required if `decorative` is not `true`.              |
+| `decorative`  | `false`                   | Decorative images must not duplicate nearby text.    |
+| `width` / `height` | —                    | `Length`. Numbers → `px`.                            |
+| `minWidth`    | —                         | CSS `min-width`. Prevents layout collapse when loading. |
+| `minHeight`   | —                         | CSS `min-height`.                                    |
+| `fit`         | `BoxFit.scaleDown`        | Maps to `object-fit` (§1.21).                        |
+| `alignment`   | `"center"`                | `object-position`.                                   |
+| `opacity`     | —                         | `0..1` on the `<img>` element.                       |
+| `loading`     | `ImageLoading.lazy`       | Native `loading` attribute (§1.23).                  |
+| `placeholder` | `ImagePlaceholder.none`   | Enum preset (§1.24). Ignored if `placeholderBuilder$` is set. |
+| `placeholderBuilder$` | —                   | Custom JSX until `load`; overrides `placeholder`. |
+| `error`       | `ImageError.text`         | Enum preset (§1.25). Ignored if `errorBuilder$` is set. |
+| `errorBuilder$` | —                       | Custom JSX on `error`; overrides `error`. |
+| _base props_  | —                         | See §0.6.                                            |
 
-> Zero children. Self-closing: `<Image src="…" alt="…" />`.
+> Zero children (zero-slot). Self-closing: `<Image src="…" alt="…" />`. Custom UI uses **builder QRLs**, not named slots.
+
+### Placeholder & error (enums + builders)
+
+| Prop | Flutter analogue | When visible |
+| ---- | ---------------- | ------------ |
+| `placeholder` | `frameBuilder` (preset) | SSR + until `<img>` `load`; hidden after load or on error. |
+| `placeholderBuilder$` | `frameBuilder` (custom) | Same as `placeholder`; **overrides** enum when set. |
+| `error` | `errorBuilder` (preset) | On `<img>` `error`; hides `<img>` unless `ImageError.none`. |
+| `errorBuilder$` | `errorBuilder` (custom) | Same as `error`; **overrides** enum when set. |
+| `loading` | (browser `loading` attr) | Native lazy/eager fetch — separate from placeholder UI. |
+
+**Precedence:** `placeholderBuilder$` > `placeholder`; `errorBuilder$` > `error`. Use `error={ImageError.none}` with **no** `errorBuilder$` to keep the browser broken-image affordance.
+
+**Builders** must be Qwik QRLs (`$((…) => …)`). The implementation wraps builder output in a positioned layer; custom error content is inside a `role="alert"` container (provide visible text or `aria-label` for icon-only UIs).
 
 ### Usage
 
 ```tsx
+{/* Minimal — self-closing */}
 <Image src="/hero.jpg" alt="Team working together" width={400} height={240} fit={BoxFit.cover} />
 
 <Image src="/logo.svg" decorative width={48} height={48} fit={BoxFit.contain} />
+
+{/* Eager hero (above the fold) */}
+<Image
+  src="/banner.png"
+  alt="Conference hall"
+  width="100%"
+  height={200}
+  minHeight={200}
+  fit={BoxFit.cover}
+  loading={ImageLoading.eager}
+/>
+
+{/* Placeholder + error enums */}
+<Image
+  src="/avatar.jpg"
+  alt="User avatar"
+  width={64}
+  height={64}
+  minWidth={64}
+  minHeight={64}
+  fit={BoxFit.cover}
+  placeholder={ImagePlaceholder.shimmer}
+  error={ImageError.text}
+/>
+
+{/* Custom builders (Flutter errorBuilder / frameBuilder parity) */}
+<Image
+  src="/avatar.jpg"
+  alt="User avatar"
+  width={64}
+  height={64}
+  fit={BoxFit.cover}
+  placeholderBuilder$={$(() => (
+    <Center><Text>Loading…</Text></Center>
+  ))}
+  errorBuilder$={$(() => (
+    <Center><Text color="#b00020">Could not load image</Text></Center>
+  ))}
+/>
 
 <Stack>
   <Image src="/banner.png" alt="" decorative width="100%" height={200} fit={BoxFit.cover} />
@@ -1995,37 +2119,45 @@ Image.network(
   fit: BoxFit.cover,
 )
 
-Image.asset(
-  'assets/logo.png',
-  width: 48,
-  height: 48,
-  fit: BoxFit.contain,
+// errorBuilder ≈ errorBuilder$={$(() => <Text>…</Text>)} or error={ImageError.text}
+Image.network(
+  'https://example.com/avatar.jpg',
+  width: 64,
+  height: 64,
+  fit: BoxFit.cover,
+  errorBuilder: (context, error, stackTrace) {
+    return Center(child: Text('Could not load image'));
+  },
 )
+// TS/JSX: errorBuilder$={$(() => <Center><Text>Could not load image</Text></Center>)}
 ```
 
 ### Accessibility considerations
 
 - **Meaningful images:** `alt` must describe content or function, not the filename.
 - **Decorative images:** `decorative={true}` → `alt=""` + `role="presentation"`.
+- **`ImageError.text` / `ImageError.icon`:** implementation sets `role="alert"` on the error layer. Do not rely on color alone.
+- **`placeholder` enum / `placeholderBuilder$`:** preset and custom layers use `aria-hidden="true"` on the placeholder layer; wrapper uses `aria-busy="true"` until load.
+- **`errorBuilder$`:** wrapper layer uses `role="alert"`; ensure custom content is perceivable (text or `aria-label`).
 - **Do not** use `Image` for text — use real text or `Text`.
 - If the image is the sole control (e.g. icon button), use `Button` with slotted `<img alt="…">` instead.
 
 ### Notes
 
 - **`Image.asset` / bundled assets** — caller resolves paths (`/assets/…`); no build-time asset pipeline in v1.1.
-- **`errorBuilder` / `loadingBuilder` / `frameBuilder`** — deferred (§24).
-- **`semanticLabel`** → `alt` (web-native naming).
-- **`excludeFromSemantics`** → `decorative`.
-- **`color` / `colorBlendMode`** (Flutter tint) — deferred; use CSS `filter` via `style` until v2.
+- **`loading` vs `placeholder`:** `loading` is the native `loading` attribute (`ImageLoading`); `placeholder` is the enum preset layer until `load`.
+- **`BoxFit.fitWidth` / `fitHeight`** — enum members exist; full CSS mapping deferred in implementation (§22.5). Use `contain` / `cover` until then.
+- **`semanticLabel`** → `alt`; **`excludeFromSemantics`** → `decorative`.
+- **`color` / `colorBlendMode`** (Flutter tint) — deferred; use `filter` via `style` until v2.
 - **`gaplessPlayback`**, **`filterQuality`**, **`repeat`** — not applicable or deferred.
+- **Enums + QRL builders, not slots** — presets stay typed; custom content via `placeholderBuilder$` / `errorBuilder$` (Principle #7–#8).
 
 ### Future extensibility
 
 | Version | Addition                                                          |
 | ------- | ----------------------------------------------------------------- |
-| v1.1    | `loading`, `decoding?: "async" \| "sync" \| "auto"`               |
-| v1.2    | `srcset`, `sizes` for responsive images                           |
-| v2      | `placeholder`, `error` slots; `Image.asset` helper; LQIP blur      |
+| v1.2    | `srcset`, `sizes`; `decoding?: "async" \| "sync" \| "auto"`       |
+| v2      | `Image.asset`; LQIP; richer builder context (e.g. `src`, dimensions) |
 
 ---
 
@@ -2497,7 +2629,8 @@ All review items resolved.
 
 - **`Card` vs `Container`:** `Card` owns surface/elevation defaults; `Container` owns sizing/alignment/constraints. No prop duplication beyond shared decoration types.
 - **`Button.color` vs `Text.color`:** both mean foreground; `Container.backgroundColor` remains background.
-- **`Image` is zero-slot; `Divider` is zero-slot;** `Visibility` / `Card` / `Button` follow single-child slot convention.
+- **`Image` placeholder/error:** `ImagePlaceholder` / `ImageError` enums + optional `placeholderBuilder$` / `errorBuilder$` — not slots (§1.24–§1.25, §18).
+- **`Divider` is zero-slot;** `Visibility` / `Card` / `Button` follow single-child slot convention.
 - **`Divider.axis`** reuses `Axis` enum (§1.4) instead of a separate `VerticalDivider` widget.
 - **`Image.alt` required** unless `decorative` — stricter than Flutter, aligned with web a11y (Principle #3).
 - **`Align` vs `Center`:** `Center` = centered `Align`; factors only on `Align` (§20).
@@ -2524,7 +2657,7 @@ All review items resolved.
 | `Card`       | one (slot)    | 1.1 | Narrower than `Container`; default `elevation: 1`; shares `ContainerTag`.                |
 | `Divider`    | none          | 1.1 | `axis` unifies `Divider` + `VerticalDivider`; `<hr>` when horizontal.                    |
 | `Button`     | one (slot)    | 1.1 | First interactive widget; `onClick$`; `ButtonVariant` enum; `href` for links.            |
-| `Image`      | none          | 1.1 | `src` + `alt`/`decorative`; `BoxFit`; URL-only in v1.1.                                  |
+| `Image`      | none          | 1.1 | `<img>` + `BoxFit` + `ImageLoading`; placeholder/error enums + builder QRLs; `min-*`. |
 | `Visibility` | one (slot)    | 1.1 | `maintainSize` / `maintainSemantics`; no `replacement` slot yet.                         |
 | `Align`      | one (slot)    | 1.1 | General `Alignment`; `widthFactor` / `heightFactor`; distinct from `Container.alignment`. |
 | `AspectRatio`| one (slot)    | 1.1 | Required `aspectRatio`; CSS `aspect-ratio` property.                                    |
@@ -2583,7 +2716,10 @@ v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in 
 | 44 | **v1.1 `Divider` widget**                                                                         | Unified `axis`; `<hr>` horizontal / `role="separator"` vertical.        |
 | 45 | **v1.1 `Button` widget**                                                                          | First interactive primitive; `InteractiveProps`; §0.7 conventions.      |
 | 46 | **`ButtonVariant` enum**                                                                          | `filled` / `outlined` / `text` / `elevated` (§1.22).                    |
-| 47 | **v1.1 `Image` widget**                                                                           | `src` + `alt`; `BoxFit`; `decorative` flag (§18).                       |
+| 47 | **v1.1 `Image` widget**                                                                           | `<img>` + `alt`/`decorative`; `BoxFit`; `ImageLoading` (§18).           |
+| 57 | **`ImagePlaceholder` / `ImageError` enums**                                                        | Preset placeholder/error UI — not slots (§1.24–§1.25, §18).         |
+| 58 | **`Image` `minWidth` / `minHeight`**                                                              | `Length` constraints on wrapper (§18).                                |
+| 59 | **`Image` `placeholderBuilder$` / `errorBuilder$`**                                                | Custom QRL builders; override enum presets when set (§18).          |
 | 48 | **`BoxFit` enum**                                                                                 | Maps to `object-fit` (§1.21).                                           |
 | 49 | **v1.1 `Visibility` widget**                                                                      | `maintainSize` + `maintainSemantics`; no `replacement` in v1.1.         |
 | 50 | **`ImageLoading` enum**                                                                           | v1.1 `loading` attribute (§1.23).                                       |
@@ -2947,7 +3083,7 @@ Roadmap-level only — informs `ButtonSize`, `Divider` colors, and form focus ri
 | Status | Items                                                                                                                                  |
 | ------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | **v1.0** | 12 layout/typography widgets, 20 enums, shared types incl. `ContainerTag`, `TextTag`. |
-| **v1.1** | +7 widgets (§15–§21); +3 enums shipped (`BoxFit`, `ButtonVariant`, `ImageLoading`); `InteractiveProps`; `ButtonSize` doc-only (§1.24). |
+| **v1.1** | +7 widgets (§15–§21); +5 enums (`BoxFit`, `ButtonVariant`, `ImageLoading`, `ImagePlaceholder`, `ImageError`); `InteractiveProps`; `ButtonSize` doc-only (§1.26). |
 | **v1.2** | Scrolling §26.2; `ButtonSize` implementation; polish items. |
 | **Future** | Forms §26.3, Theming §26.4, virtualization, `Link`, `Responsive<T>`, animation. |
 
@@ -2959,7 +3095,7 @@ Concrete, line-item to-do list. Work top-to-bottom within each phase.
 
 ### Phase 1 — Shared foundation
 
-- [ ] `src/lib/_shared/enums.ts` — author all v1 enums from §1 (20) + v1.1 enums (§1.21–§1.23):
+- [ ] `src/lib/_shared/enums.ts` — author all v1 enums from §1 (20) + v1.1 enums (§1.21–§1.25):
   - [ ] `MainAxisAlignment`, `CrossAxisAlignment`, `MainAxisSize` (§1.1–§1.3)
   - [ ] `Axis`, `WrapAlignment`, `WrapCrossAlignment` (§1.4–§1.6)
   - [ ] `TextDirection`, `VerticalDirection` (§1.7–§1.8)
@@ -3005,13 +3141,13 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 
 > **Gate:** §22 open questions approved.
 
-- [ ] Extend `_shared/enums.ts` — `BoxFit`, `ButtonVariant`, `ImageLoading` (§1.21–§1.23).
+- [ ] Extend `_shared/enums.ts` — `BoxFit`, `ButtonVariant`, `ImageLoading`, `ImagePlaceholder`, `ImageError` (§1.21–§1.25).
 - [ ] Extend `_shared/types.ts` — `ButtonTag`, `InteractiveProps`; centralize `ContainerTag` export (§2).
 - [ ] `src/lib/align/` — `AlignProps` from §20.
 - [ ] `src/lib/aspect-ratio/` — `AspectRatioProps` from §21.
 - [ ] `src/lib/card/` — `CardProps` from §15.
 - [ ] `src/lib/divider/` — `DividerProps` from §16.
-- [ ] `src/lib/image/` — `ImageProps` from §18 (`BoxFit` subset per §22.5 if deferred).
+- [ ] `src/lib/image/` — `ImageProps` from §18 (enums + `placeholderBuilder$` / `errorBuilder$`; `minWidth` / `minHeight`).
 - [ ] `src/lib/visibility/` — `VisibilityProps` from §19.
 - [ ] `src/lib/button/` — `ButtonProps` from §17 (implement last).
 - [ ] Playground screens for all seven v1.1 widgets.

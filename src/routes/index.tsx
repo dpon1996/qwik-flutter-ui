@@ -1,9 +1,10 @@
 import { component$ } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
 
-import { Axis } from "~/lib/_shared";
+import { Axis, BoxFit, ImageLoading } from "~/lib/_shared";
 import { Column } from "~/lib/column";
 import { Divider } from "~/lib/divider";
+import { Image } from "~/lib/image";
 import { Row } from "~/lib/row";
 import { Text } from "~/lib/text";
 
@@ -21,6 +22,14 @@ export default component$(() => {
         <Divider axis={Axis.vertical} size="100%" />
         <Text>Right</Text>
       </Row>
+      <Image
+        src="https://picsum.photos/800/480"
+        alt="Sample landscape"
+        width={400}
+        height={240}
+        fit={BoxFit.cover}
+        loading={ImageLoading.lazy}
+      />
 
     </Column>
   );

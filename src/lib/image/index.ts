@@ -3,4 +3,8 @@
  */
 
 export { Image } from "./image";
-export type { ImageProps } from "./types";
+export type {
+  ImageErrorBuilder,
+  ImagePlaceholderBuilder,
+  ImageProps,
+} from "./types";

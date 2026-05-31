@@ -245,3 +245,20 @@ export const ImageLoading = {
 } as const;
 export type ImageLoading =
   (typeof ImageLoading)[keyof typeof ImageLoading];
+
+/* §1.24 — `ImagePlaceholder` (Image) */
+export const ImagePlaceholder = {
+  none: "none",
+  skeleton: "skeleton",
+  shimmer: "shimmer",
+} as const;
+export type ImagePlaceholder =
+  (typeof ImagePlaceholder)[keyof typeof ImagePlaceholder];
+
+/* §1.25 — `ImageError` (Image) */
+export const ImageError = {
+  none: "none",
+  icon: "icon",
+  text: "text",
+} as const;
+export type ImageError = (typeof ImageError)[keyof typeof ImageError];
