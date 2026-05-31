@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "incremental": false,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "outDir": "lib-types",
+    "rootDir": "src",
+    "stripInternal": true
+  },
+  "include": ["src/index.ts", "src/lib/**/*"],
+  "exclude": [
+    "src/routes",
+    "src/entry.dev.tsx",
+    "src/entry.preview.tsx",
+    "src/entry.ssr.tsx",
+    "src/root.tsx",
+    "src/components",
+    "src/global.css",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ]
+}

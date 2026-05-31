@@ -1,4 +1,4 @@
-# Build
+# Build output
 /dist
 /lib
 /lib-types
@@ -14,6 +14,7 @@ node_modules
 .mf
 .rollup.cache
 tsconfig.tsbuildinfo
+*.tsbuildinfo
 
 # Logs
 logs
@@ -27,6 +28,7 @@ lerna-debug.log*
 # Editor
 .vscode/*
 !.vscode/launch.json
+!.vscode/extensions.json
 !.vscode/*.code-snippets
 
 .idea
