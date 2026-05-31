@@ -1,0 +1,22 @@
+/*
+ * Visibility — show/hide wrapper.
+ *
+ * Hidden modes are class-driven for SSR. `inert` and `aria-hidden` are set
+ * on the wrapper from visibility.tsx when `visible={false}`.
+ */
+
+.visibility {
+  display: block;
+}
+
+/* visible={false}, maintainSize={false} — no layout box */
+.hidden {
+  display: none;
+  pointer-events: none;
+}
+
+/* visible={false}, maintainSize={true} — Offstage-style; preserves space */
+.offstage {
+  visibility: hidden;
+  pointer-events: none;
+}

@@ -25,3 +25,4 @@ export * from "./lib/text";
 export * from "./lib/card";
 export * from "./lib/divider";
 export * from "./lib/image";
+export * from "./lib/visibility";
