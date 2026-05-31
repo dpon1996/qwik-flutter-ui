@@ -3,6 +3,7 @@ import type { DocumentHead } from "@builder.io/qwik-city";
 import { Column } from "~/lib/column";
 import { Container } from "~/lib/container/container";
 import { Expanded } from "~/lib/expanded";
+import { Flexible } from "~/lib/flexible";
 import { Row } from "~/lib/row";
 import { SizedBox } from "~/lib/sized-box";
 
@@ -11,8 +12,11 @@ export default component$(() => {
     <SizedBox height={500}>
       <Column>
         <Row>
-          <Container width={300} height={300} backgroundColor="yellow"></Container>
-          <Expanded><Container backgroundColor="green" height={10} ></Container></Expanded>
+          <Flexible>
+            <Container height={300} backgroundColor="yellow">
+            </Container>
+          </Flexible>
+          <Container backgroundColor="green" height={300} width={100} ></Container>
         </Row>
         <Expanded><Container backgroundColor="green" width={10} ></Container></Expanded>
         <Container backgroundColor="red" height={100} width={100} ></Container>
