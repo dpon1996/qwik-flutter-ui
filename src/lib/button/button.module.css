@@ -1,0 +1,84 @@
+/*
+ * Button — Material-style pressable control (§17).
+ *
+ * Variant presets define default colors, padding, and borders. Per-instance
+ * overrides arrive via inline `style` from button.tsx.
+ */
+
+.button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.25rem;
+  border: none;
+  font: inherit;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.button:focus {
+  outline: none;
+}
+
+.button:focus-visible {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+}
+
+.button:disabled,
+.button[aria-disabled="true"] {
+  opacity: 0.38;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* ---- variants (ButtonVariant) ---- */
+
+.variant-filled {
+  color: #fff;
+  background-color: #1976d2;
+}
+
+.variant-filled:hover:not(:disabled):not([aria-disabled="true"]) {
+  background-color: #1565c0;
+}
+
+.variant-outlined {
+  color: #1976d2;
+  background-color: transparent;
+  border: 1px solid #1976d2;
+}
+
+.variant-outlined:hover:not(:disabled):not([aria-disabled="true"]) {
+  background-color: rgba(25, 118, 210, 0.08);
+}
+
+.variant-text {
+  color: #1976d2;
+  background-color: transparent;
+}
+
+.variant-text:hover:not(:disabled):not([aria-disabled="true"]) {
+  background-color: rgba(25, 118, 210, 0.08);
+}
+
+.variant-elevated {
+  color: #fff;
+  background-color: #1976d2;
+}
+
+.variant-elevated:hover:not(:disabled):not([aria-disabled="true"]) {
+  background-color: #1565c0;
+}
