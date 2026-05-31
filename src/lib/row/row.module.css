@@ -1,0 +1,43 @@
+/*
+ * Row — horizontal flex layout. Static class set; per-instance values
+ * (gap, direction) come in via inline `style` from row.tsx.
+ *
+ * Class shape:
+ *   .row                — base (display:flex; flex-direction:row)
+ *   .main-<value>       — justify-content helpers (mainAxisAlignment)
+ *   .cross-<value>      — align-items helpers (crossAxisAlignment)
+ *   .size-<value>       — width helpers (mainAxisSize)
+ *
+ * Class suffixes match the literal enum values defined in
+ * src/lib/_shared/enums.ts (e.g. MainAxisAlignment.spaceBetween === "space-between"
+ * → class .main-space-between). That keeps the JS-side lookup a one-liner:
+ *   styles[`main-${mainAxisAlignment}`]
+ */
+
+.row {
+  display: flex;
+  flex-direction: row;
+}
+
+/* --- mainAxisAlignment → justify-content -------------------------- */
+.main-start          { justify-content: flex-start; }
+.main-end            { justify-content: flex-end; }
+.main-center         { justify-content: center; }
+.main-space-between  { justify-content: space-between; }
+.main-space-around   { justify-content: space-around; }
+.main-space-evenly   { justify-content: space-evenly; }
+
+/* --- crossAxisAlignment → align-items ----------------------------- */
+.cross-start    { align-items: flex-start; }
+.cross-end      { align-items: flex-end; }
+.cross-center   { align-items: center; }
+.cross-stretch  { align-items: stretch; }
+.cross-baseline { align-items: baseline; }
+
+/* --- mainAxisSize → width ----------------------------------------- *
+ * Per API_DESIGN §3 / §1.3:
+ *   max → take all horizontal space available (width: 100%)
+ *   min → shrink to fit children   (width: fit-content)
+ */
+.size-max { width: 100%; }
+.size-min { width: fit-content; }

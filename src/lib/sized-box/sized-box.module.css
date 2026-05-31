@@ -1,0 +1,19 @@
+/*
+ * SizedBox — base structure.
+ *
+ * Per-instance width/height are applied via inline `style` from
+ * sized-box.tsx (Length → px or pass-through string). The static base
+ * class only enforces structural invariants:
+ *
+ *  - `box-sizing: border-box` — width/height include any future border
+ *    so the box's reserved space matches the developer's input.
+ *  - `flex-shrink: 0` — inside a flex parent (e.g. Row / Column) the
+ *    default `flex-shrink: 1` would let the parent squeeze the box
+ *    smaller than its declared size. Forcing 0 honours SizedBox's
+ *    Flutter contract: "this box is exactly this size."
+ */
+
+.sized-box {
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
