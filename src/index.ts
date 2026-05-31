@@ -20,3 +20,4 @@ export * from "./lib/flexible";
 export * from "./lib/center";
 export * from "./lib/wrap";
 export * from "./lib/stack";
+export * from "./lib/positioned";

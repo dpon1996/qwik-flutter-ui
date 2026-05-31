@@ -1,0 +1,12 @@
+/*
+ * Positioned — absolute-positioned Stack child.
+ *
+ * Notes:
+ * - `position: absolute` is static and always applied via class.
+ * - Offsets/sizing (`top/right/bottom/left/width/height`) are per-instance
+ *   and are applied inline from positioned.tsx.
+ */
+
+.positioned {
+  position: absolute;
+}
