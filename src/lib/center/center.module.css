@@ -1,0 +1,22 @@
+/*
+ * Center — bi-directional centering with flexbox.
+ *
+ * Equivalent to:
+ *   Container({ width: "100%", height: "100%", alignment: Alignment.center })
+ * per API_DESIGN §10.
+ *
+ * Why width/height 100%?
+ * - In Flutter, Center expands to the available constraints from its parent.
+ * - On the web, this maps to filling the parent's box and centering inside it.
+ *
+ * Note: vertical centering only has visible effect when the parent has a
+ * definite height (same practical constraint as CSS/Flexbox generally).
+ */
+
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}

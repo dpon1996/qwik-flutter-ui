@@ -17,3 +17,4 @@ export * from "./lib/column";
 export * from "./lib/spacer";
 export * from "./lib/expanded";
 export * from "./lib/flexible";
+export * from "./lib/center";
