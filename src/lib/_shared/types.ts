@@ -5,7 +5,7 @@
  * `docs/API_DESIGN.md` §2.
  */
 
-import type { CSSProperties } from "@builder.io/qwik";
+import type { CSSProperties, QRL } from "@builder.io/qwik";
 
 import type {
   BorderStyle,
@@ -147,7 +147,7 @@ export interface FlexProps extends BaseProps {
 /* ----------------------------------------------------------------- */
 
 /**
- * HTML tags that `Container` can render via its `as` prop. Default is `"div"`.
+ * HTML tags that `Container` and `Card` can render via `as`. Default is `"div"`.
  */
 export type ContainerTag =
   | "div"
@@ -176,3 +176,19 @@ export type TextTag =
   | "strong"
   | "em"
   | "small";
+
+/* ----------------------------------------------------------------- */
+/* Interactive widgets (§17 Button; v1.1+)                            */
+/* ----------------------------------------------------------------- */
+
+/** Native element for `Button`. Default `"button"`. */
+export type ButtonTag = "button" | "a";
+
+/**
+ * Base for interactive widgets. Layout widgets do **not** extend this.
+ * See `docs/API_DESIGN.md` §0.7 and §2.
+ */
+export interface InteractiveProps {
+  onClick$?: QRL<(event: MouseEvent, element: HTMLElement) => void>;
+  disabled?: boolean;
+}

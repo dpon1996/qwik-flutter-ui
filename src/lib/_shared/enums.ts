@@ -38,7 +38,7 @@ export const MainAxisSize = {
 export type MainAxisSize =
   (typeof MainAxisSize)[keyof typeof MainAxisSize];
 
-/* §1.4 — `Axis` (Wrap) */
+/* §1.4 — `Axis` (Wrap, Divider, scrolling v1.2) */
 export const Axis = {
   horizontal: "horizontal",
   vertical: "vertical",
@@ -82,7 +82,7 @@ export const VerticalDirection = {
 export type VerticalDirection =
   (typeof VerticalDirection)[keyof typeof VerticalDirection];
 
-/* §1.9 — `Alignment` (Container / Stack / Center) */
+/* §1.9 — `Alignment` (Container / Stack / Center / Align) */
 export const Alignment = {
   topLeft: "top-left",
   topCenter: "top-center",
@@ -215,3 +215,33 @@ export const BorderStyle = {
   dotted: "dotted",
 } as const;
 export type BorderStyle = (typeof BorderStyle)[keyof typeof BorderStyle];
+
+/* §1.21 — `BoxFit` (Image) */
+export const BoxFit = {
+  fill: "fill",
+  contain: "contain",
+  cover: "cover",
+  fitWidth: "fit-width",
+  fitHeight: "fit-height",
+  none: "none",
+  scaleDown: "scale-down",
+} as const;
+export type BoxFit = (typeof BoxFit)[keyof typeof BoxFit];
+
+/* §1.22 — `ButtonVariant` (Button) */
+export const ButtonVariant = {
+  filled: "filled",
+  outlined: "outlined",
+  text: "text",
+  elevated: "elevated",
+} as const;
+export type ButtonVariant =
+  (typeof ButtonVariant)[keyof typeof ButtonVariant];
+
+/* §1.23 — `ImageLoading` (Image) */
+export const ImageLoading = {
+  eager: "eager",
+  lazy: "lazy",
+} as const;
+export type ImageLoading =
+  (typeof ImageLoading)[keyof typeof ImageLoading];
