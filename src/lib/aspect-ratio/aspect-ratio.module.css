@@ -1,0 +1,21 @@
+/*
+ * AspectRatio — proportional box via CSS `aspect-ratio`.
+ *
+ * Width follows the parent; height is computed from `aspectRatio` (Flutter
+ * parity). Per-instance `aspect-ratio` is set inline from aspect-ratio.tsx.
+ */
+
+.aspectRatio {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Let slotted media/layout children fill the ratio box when sized to 100%. */
+.aspectRatio > * {
+  box-sizing: border-box;
+}

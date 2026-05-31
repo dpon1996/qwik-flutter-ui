@@ -27,3 +27,4 @@ export * from "./lib/divider";
 export * from "./lib/image";
 export * from "./lib/visibility";
 export * from "./lib/align";
+export * from "./lib/aspect-ratio";
