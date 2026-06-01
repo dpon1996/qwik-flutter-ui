@@ -1,0 +1,56 @@
+/*
+ * Checkbox — native <input type="checkbox"> with optional label (§46).
+ */
+
+.root {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.controlRow {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.input {
+  box-sizing: border-box;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0.125rem 0 0;
+  flex-shrink: 0;
+  accent-color: #1976d2;
+  cursor: pointer;
+}
+
+.input:disabled {
+  cursor: not-allowed;
+}
+
+.input:focus-visible {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+}
+
+.label {
+  display: inline;
+  font: inherit;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: inherit;
+  cursor: pointer;
+  user-select: none;
+}
+
+.controlRow:has(.input:disabled) .label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.requiredMark {
+  margin-left: 0.125rem;
+  color: #c62828;
+}

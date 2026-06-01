@@ -1,16 +1,16 @@
 /**
- * `Form` context — field registration for `TextFormField` (§31).
+ * `Form` context — field registration for `TextFormField`, `Checkbox`, etc. (§31, §53).
  * Provided by `<Form>` when implemented; optional for standalone fields.
  */
 
 import { createContextId, type QRL } from "@builder.io/qwik";
 
-import type { AutovalidateMode } from "../_shared";
+import type { AutovalidateMode, FormFieldValue } from "../_shared";
 
 /** Per-field handle registered with an ancestor `<Form>`. */
 export interface FormFieldRegistration {
   name: string;
-  getValue: () => string;
+  getValue: () => FormFieldValue;
   validate$?: QRL<(value: string) => string | undefined>;
   setError: (message: string | undefined) => void;
   getTouched: () => boolean;

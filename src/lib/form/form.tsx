@@ -17,7 +17,11 @@ import {
   type CSSProperties,
 } from "@builder.io/qwik";
 
-import { AutovalidateMode, type FormValues } from "../_shared";
+import {
+  AutovalidateMode,
+  type FormFieldValue,
+  type FormValues,
+} from "../_shared";
 
 import { FormContext, type FormFieldRegistration } from "./context";
 import type { FormProps } from "./types";
@@ -25,16 +29,17 @@ import type { FormProps } from "./types";
 interface FormRegistry {
   autovalidateMode: AutovalidateMode;
   fields: Record<string, FormFieldRegistration>;
-  values: Record<string, string>;
+  values: Record<string, FormFieldValue>;
   /** Set when `onSubmit$` or any registered field has `validator$` (§34 F1). */
   useNoValidate: boolean;
 }
 
 async function runFieldValidator(
   field: FormFieldRegistration,
-  value: string,
+  value: FormFieldValue,
 ): Promise<string | undefined> {
   if (!field.validate$) return undefined;
+  if (typeof value !== "string") return undefined;
   return await field.validate$(value);
 }
 

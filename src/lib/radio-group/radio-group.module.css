@@ -1,0 +1,28 @@
+/*
+ * RadioGroup — native <fieldset> with optional <legend> (§48).
+ */
+
+.fieldset {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+.legend {
+  box-sizing: border-box;
+  display: block;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: inherit;
+}
+
+.fieldset:disabled .legend {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
