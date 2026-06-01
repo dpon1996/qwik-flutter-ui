@@ -222,7 +222,29 @@ export interface InputDecoration {
 /** Submit payload from `Form` (`onSubmit$`). See §31, Decision #76. */
 export type FormValues = Record<string, unknown>;
 
+/**
+ * Value read from a registered form field (`FormFieldRegistration.getValue`).
+ * v1.3 text fields use `string`; v1.4 selection controls use `string` or `boolean`
+ * (§53, §56 SC8). `FormValues` remains `Record<string, unknown>` at submit.
+ */
+export type FormFieldValue = string | boolean;
+
 /** Per-field validator; returns an error message or `undefined` when valid. */
 export type FormFieldValidator<T = unknown> = (
   value: T,
 ) => string | undefined;
+
+/* ----------------------------------------------------------------- */
+/* Selection controls (v1.4 — §50 Dropdown, §51)                      */
+/* ----------------------------------------------------------------- */
+
+/**
+ * One option for native `<select>` rendering in `Dropdown`.
+ * See `docs/API_DESIGN.md` §50–§51.
+ */
+export interface DropdownOption {
+  /** Option token — `string` only in v1.4 (§53). */
+  value: string;
+  label: string;
+  disabled?: boolean;
+}
