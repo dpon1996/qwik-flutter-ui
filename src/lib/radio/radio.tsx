@@ -2,9 +2,10 @@
  * `Radio` — one option in a `RadioGroup` via native `<input type="radio">`.
  * Flutter equivalent of `Radio`. See `docs/API_DESIGN.md` §47.
  *
- * - Must be used inside `RadioGroup` only (#80).
- * - `checked` derived from group context (#82); no local selection state.
- * - `name` / `onChange$` for the group are owned by `RadioGroup`.
+ * - Inside `RadioGroup` only (#80).
+ * - `checked` = `RadioGroup` selection === `value` (#82); no local selection state.
+ * - `name` and group `onChange$` live on `RadioGroup` only.
+ * - Slotted label content takes precedence over `label` prop (#84).
  */
 
 import {
@@ -21,6 +22,9 @@ import { RadioGroupContext } from "../radio-group/context";
 import styles from "./radio.module.css";
 import type { RadioProps } from "./types";
 
+const OUTSIDE_GROUP_WARN =
+  "[Radio] Must be used inside <RadioGroup>. Rendering a disabled fallback.";
+
 export const Radio = component$<RadioProps>((props) => {
   const {
     value,
@@ -36,22 +40,30 @@ export const Radio = component$<RadioProps>((props) => {
   const generatedId = useId();
   const inputId = id ?? generatedId;
 
-  if (import.meta.env.DEV && group === null) {
-    console.warn("[Radio] Must be used inside <RadioGroup>; rendering nothing.");
-  }
-
-  if (group === null) {
-    return null;
-  }
-
-  const isChecked = group.selectedValue === value;
-  const isDisabled = group.disabled || optionDisabled;
-
   const optionClasses = [styles.option, className].filter(Boolean).join(" ");
 
   const optionStyle: CSSProperties | undefined = userStyle
     ? (userStyle as CSSProperties)
     : undefined;
+
+  if (group === null) {
+    if (import.meta.env.DEV) {
+      console.warn(OUTSIDE_GROUP_WARN);
+    }
+    return (
+      <RadioOutsideGroupFallback
+        inputId={inputId}
+        value={value}
+        label={label}
+        optionClasses={optionClasses}
+        optionStyle={optionStyle}
+        rest={rest}
+      />
+    );
+  }
+
+  const isChecked = group.selectedValue === value;
+  const isDisabled = group.disabled || optionDisabled;
 
   const handleChange = $((ev: Event) => {
     const input = ev.target as HTMLInputElement;
@@ -73,9 +85,39 @@ export const Radio = component$<RadioProps>((props) => {
         disabled={isDisabled || undefined}
         onChange$={handleChange}
       />
-      <label class={styles.label} for={inputId}>
-        <Slot>{label}</Slot>
-      </label>
+      <RadioLabel inputId={inputId} label={label} />
     </div>
   );
 });
+
+/** Slotted content replaces fallback `label` text (#84). */
+const RadioLabel = component$<{ inputId: string; label?: string }>(
+  ({ inputId, label }) => (
+    <label class={styles.label} for={inputId}>
+      <Slot>{label}</Slot>
+    </label>
+  ),
+);
+
+/** Inert markup when `RadioGroup` context is missing — never throws. */
+const RadioOutsideGroupFallback = component$<{
+  inputId: string;
+  value: string;
+  label?: string;
+  optionClasses: string;
+  optionStyle: CSSProperties | undefined;
+  rest: Record<string, unknown>;
+}>(({ inputId, value, label, optionClasses, optionStyle, rest }) => (
+  <div class={optionClasses} style={optionStyle} aria-hidden="true">
+    <input
+      {...rest}
+      type="radio"
+      id={inputId}
+      value={value}
+      class={styles.input}
+      disabled
+      tabIndex={-1}
+    />
+    <RadioLabel inputId={inputId} label={label} />
+  </div>
+));
