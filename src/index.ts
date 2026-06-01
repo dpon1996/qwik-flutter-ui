@@ -39,3 +39,4 @@ export * from "./lib/form";
 export * from "./lib/checkbox";
 export * from "./lib/radio";
 export * from "./lib/radio-group";
+export * from "./lib/switch";
