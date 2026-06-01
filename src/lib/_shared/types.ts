@@ -192,3 +192,37 @@ export interface InteractiveProps {
   onClick$?: QRL<(event: MouseEvent, element: HTMLElement) => void>;
   disabled?: boolean;
 }
+
+/* ----------------------------------------------------------------- */
+/* Forms (v1.3 — §28 InputDecoration, §31 Form)                       */
+/* ----------------------------------------------------------------- */
+
+/**
+ * Configuration for text field label, placeholder, helper, error, and
+ * adornments. Not a widget — composed by `TextField` / `TextFormField`.
+ * See `docs/API_DESIGN.md` §28.
+ */
+export interface InputDecoration {
+  /** Visible label; maps to `<label for={inputId}>`. Flutter: `labelText`. */
+  label?: string;
+  /** Native placeholder. Flutter: `hintText`. */
+  placeholder?: string;
+  /** Helper copy; linked via `aria-describedby`. Flutter: `helperText`. */
+  helperText?: string;
+  /** Error message when invalid. Flutter: `errorText`. */
+  errorText?: string;
+  /** Visual required indicator; pairs with `required` on the control. */
+  required?: boolean;
+  /** Leading adornment — string or slotted content. */
+  prefix?: string;
+  /** Trailing adornment — string or slotted content. */
+  suffix?: string;
+}
+
+/** Submit payload from `Form` (`onSubmit$`). See §31, Decision #76. */
+export type FormValues = Record<string, unknown>;
+
+/** Per-field validator; returns an error message or `undefined` when valid. */
+export type FormFieldValidator<T = unknown> = (
+  value: T,
+) => string | undefined;

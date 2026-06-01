@@ -278,3 +278,42 @@ export const Breakpoint = {
   desktop: "desktop",
 } as const;
 export type Breakpoint = (typeof Breakpoint)[keyof typeof Breakpoint];
+
+/* §1.29 — `InputType` (TextField, v1.3) */
+export const InputType = {
+  text: "text",
+  password: "password",
+  email: "email",
+  url: "url",
+  tel: "tel",
+  search: "search",
+  number: "number",
+  date: "date",
+  time: "time",
+  datetimeLocal: "datetime-local",
+  month: "month",
+  week: "week",
+  color: "color",
+} as const;
+export type InputType = (typeof InputType)[keyof typeof InputType];
+
+/* §1.30 — `AutovalidateMode` (Form, v1.3) */
+export const AutovalidateMode = {
+  disabled: "disabled",
+  onUserInteraction: "onUserInteraction",
+  always: "always",
+} as const;
+export type AutovalidateMode =
+  (typeof AutovalidateMode)[keyof typeof AutovalidateMode];
+
+/* §1.31 — `InputMode` (TextField, v1.3) */
+export const InputMode = {
+  text: "text",
+  search: "search",
+  email: "email",
+  tel: "tel",
+  url: "url",
+  numeric: "numeric",
+  decimal: "decimal",
+} as const;
+export type InputMode = (typeof InputMode)[keyof typeof InputMode];
