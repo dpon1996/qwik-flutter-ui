@@ -1,20 +1,25 @@
 import { component$ } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
-import { ButtonVariant } from "~/lib/_shared/enums";
-import { Button } from "~/lib/button";
-
-import { Column } from "~/lib/column";
-
+import { BoxFit } from "~/lib/_shared/enums";
+import { Container } from "~/lib/container";
+import { GridView } from "~/lib/grid-view";
+import { Image } from "~/lib/image";
 export default component$(() => {
-
-
   return (
-    <Column gap={16}>
-      <Button
-        onClick$={() => console.log("clicked")}
-        variant={ButtonVariant.filled}
-      >Click me</Button>
-    </Column>
+    <Container height="100vh" padding={16}>
+      <GridView columns={4} gap={16} mainAxisSpacing={16} childAspectRatio={1}>
+        {Array.from({ length: 12 }, (_, i) => (
+          <Image
+            key={i}
+            src={`https://picsum.photos/seed/qfu-${i}/400/400`}
+            alt={`Image ${i + 1}`}
+            width="100%"
+            height="100%"
+            fit={BoxFit.cover}
+          />
+        ))}
+      </GridView>
+    </Container>
   );
 });
 

@@ -1,0 +1,117 @@
+/*
+ * ListView — scrollport + flex list of slotted children.
+ *
+ * API_DESIGN §23:
+ * - axis vertical    -> list flex-direction column; overflow-y auto
+ * - axis horizontal  -> list flex-direction row; overflow-x auto
+ * - gap              -> row-gap / column-gap on .list
+ * - reverse          -> flex-direction *-reverse
+ * - shrinkWrap       -> scrollport sizes to content vs fills parent
+ * - itemExtent       -> --qfu-item-extent on each direct child
+ * - clipBehavior     -> cross-axis overflow on scrollport
+ */
+
+.scrollport {
+  box-sizing: border-box;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* ---- scroll axis ---- */
+.axis-vertical {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.axis-vertical.cross-visible {
+  overflow-x: visible;
+}
+
+.axis-horizontal {
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+
+.axis-horizontal.cross-visible {
+  overflow-y: visible;
+}
+
+/* Default: expand in parent (shrinkWrap false). */
+.expand.axis-vertical {
+  height: 100%;
+  width: 100%;
+}
+
+.expand.axis-horizontal {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+}
+
+/* shrinkWrap: size scrollport to content (parent should bound max size). */
+.shrink-wrap.axis-vertical {
+  height: auto;
+  width: 100%;
+}
+
+.shrink-wrap.axis-horizontal {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+}
+
+/* ---- flex list (slotted children are direct flex items) ---- */
+.list {
+  display: flex;
+  box-sizing: border-box;
+}
+
+.list-vertical {
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-height: min-content;
+}
+
+.list-vertical-reverse {
+  flex-direction: column-reverse;
+  align-items: stretch;
+  width: 100%;
+  min-height: min-content;
+}
+
+.list-horizontal {
+  flex-direction: row;
+  align-items: stretch;
+  width: max-content;
+  min-width: min-content;
+}
+
+.list-horizontal-reverse {
+  flex-direction: row-reverse;
+  align-items: stretch;
+  width: max-content;
+  min-width: min-content;
+}
+
+/* itemExtent — fixed main-axis size per slotted child */
+.list-vertical.item-extent > :global(*) {
+  flex: 0 0 var(--qfu-item-extent);
+  height: var(--qfu-item-extent);
+  min-height: var(--qfu-item-extent);
+  max-height: var(--qfu-item-extent);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.list-horizontal.item-extent > :global(*) {
+  flex: 0 0 var(--qfu-item-extent);
+  width: var(--qfu-item-extent);
+  min-width: var(--qfu-item-extent);
+  max-width: var(--qfu-item-extent);
+  flex-shrink: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}

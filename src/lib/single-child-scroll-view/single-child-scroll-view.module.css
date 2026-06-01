@@ -1,0 +1,75 @@
+/*
+ * SingleChildScrollView — scrollport + inner content wrapper.
+ *
+ * Mapping from API_DESIGN §22:
+ * - axis vertical   -> overflow-y: auto; cross-axis clip per clipBehavior
+ * - axis horizontal -> overflow-x: auto; cross-axis clip per clipBehavior
+ * - reverse         -> inner flex-direction *-reverse
+ * - clipBehavior    -> cross-axis overflow visible (none) vs hidden (hardEdge)
+ *
+ * `min-height` / `min-width: 0` help nested scroll inside flex parents (§22).
+ */
+
+.scrollport {
+  box-sizing: border-box;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* ---- axis: vertical scroll ---- */
+.axis-vertical {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.axis-vertical.cross-visible {
+  overflow-x: visible;
+}
+
+/* ---- axis: horizontal scroll ---- */
+.axis-horizontal {
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Bound to parent width so wide children scroll inside, not the page (§22). */
+  width: 100%;
+  max-width: 100%;
+}
+
+.axis-horizontal.cross-visible {
+  overflow-y: visible;
+}
+
+/* ---- inner content (reverse / child flow) ---- */
+.content {
+  display: flex;
+  box-sizing: border-box;
+}
+
+.content-vertical {
+  flex-direction: column;
+  align-items: stretch;
+  min-height: min-content;
+  width: 100%;
+}
+
+.content-vertical-reverse {
+  flex-direction: column-reverse;
+  align-items: stretch;
+  min-height: min-content;
+  width: 100%;
+}
+
+.content-horizontal {
+  flex-direction: row;
+  align-items: stretch;
+  width: max-content;
+  min-width: min-content;
+  height: 100%;
+}
+
+.content-horizontal-reverse {
+  flex-direction: row-reverse;
+  align-items: stretch;
+  min-width: min-content;
+  height: 100%;
+}

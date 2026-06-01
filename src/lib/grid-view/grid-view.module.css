@@ -1,0 +1,78 @@
+/*
+ * GridView — scrollport + CSS Grid of slotted children.
+ *
+ * API_DESIGN §24:
+ * - columns        -> grid-template-columns: repeat(n, 1fr)
+ * - minItemWidth   -> repeat(auto-fill, minmax(minItemWidth, 1fr))
+ * - gap            -> column-gap (vertical scroll)
+ * - mainAxisSpacing -> row-gap (vertical scroll)
+ * - childAspectRatio -> aspect-ratio on direct children
+ * - reverse        -> scale flip on grid + children (no JS layout)
+ */
+
+.scrollport {
+  box-sizing: border-box;
+  min-height: 0;
+  min-width: 0;
+}
+
+.axis-vertical {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+  width: 100%;
+}
+
+.axis-vertical.cross-visible {
+  overflow-x: visible;
+}
+
+.axis-horizontal {
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+}
+
+.axis-horizontal.cross-visible {
+  overflow-y: visible;
+}
+
+.grid {
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: min-content;
+}
+
+/* Reverse visual order without changing DOM order (§24 reverse). */
+.grid-reverse-vertical {
+  transform: scaleY(-1);
+}
+
+.grid-reverse-vertical > :global(*) {
+  transform: scaleY(-1);
+}
+
+.grid-reverse-horizontal {
+  transform: scaleX(-1);
+}
+
+.grid-reverse-horizontal > :global(*) {
+  transform: scaleX(-1);
+}
+
+/* Row height follows aspect-ratio boxes; avoid stretch leaving empty space below content. */
+.grid.has-child-aspect {
+  align-items: start;
+}
+
+.grid.has-child-aspect > :global(*) {
+  aspect-ratio: var(--qfu-child-aspect-ratio);
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
