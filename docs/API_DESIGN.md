@@ -1,6 +1,6 @@
 # qwik-flutter-ui — Public API Design
 
-> **Status:** v1 layout + typography finalized. **v1.1** (§15–§21) specified — v1.1 open questions approved (§30). **v1.2** scrolling (§22–§24) specified — resolve open questions in §29 before implementation. **v1.25** `MediaQuery` specified (§25) — resolve open questions in §27 before implementation. **v1.3–v1.5** forms/theming remain roadmap-level (§34).
+> **Status:** v1 layout + typography finalized. **v1.1** (§15–§21) specified — v1.1 open questions approved (§40). **v1.2** scrolling (§22–§24) specified — resolve open questions in §39 before implementation. **v1.25** `MediaQuery` specified (§25) — resolve open questions in §27 before implementation. **v1.3** forms **specified** (§28–§31) — **7 of 12** open questions approved (§37, §43 #73–#79); **implementation blocked** until F1, F2, F3, F5, F10 resolved. **v1.4–v1.5** selection controls / form theming remain roadmap-level (§44).
 > **Goal:** A Flutter-inspired UI framework for Qwik. The API should feel as close to Flutter as possible while remaining idiomatic JSX.
 
 ---
@@ -52,14 +52,24 @@ Every API decision in this document is justified against these ten principles. W
 - §25 — `MediaQuery`
 - §26 — v1.25 — shared enums review
 - §27 — v1.25 MediaQuery open questions
-- §28 — v1.2 scrolling — shared enums review
-- §29 — v1.2 Scrolling open questions
-- §30 — Open questions (v1.1, approval required)
-- §31 — API consistency review
-- §32 — Summary table
-- §33 — Decisions log
-- §34 — Roadmap (incl. version summary, scrolling, forms, theming)
-- §35 — Final implementation checklist
+- §38 — `InputDecoration` (type)
+- §39 — `TextField`
+- §40 — `TextFormField`
+- §41 — `Form`
+- §42 — v1.3 forms — shared types review
+- §43 — v1.3 forms — shared enums review
+- §44 — v1.3 forms — validation strategy
+- §45 — v1.3 forms — accessibility review
+- §36 — v1.3 forms — SSR and resumability review
+- §37 — v1.3 Forms open questions
+- §38 — v1.2 scrolling — shared enums review
+- §39 — v1.2 Scrolling open questions
+- §40 — Open questions (v1.1, approval required)
+- §41 — API consistency review
+- §42 — Summary table
+- §43 — Decisions log
+- §44 — Roadmap (incl. version summary, scrolling, forms, theming)
+- §45 — Final implementation checklist
 
 ---
 
@@ -135,7 +145,7 @@ We do **not** spread `...rest` onto the DOM beyond the above; arbitrary unknown 
 
 ### 0.7 Interactive widgets (v1.1+)
 
-Layout widgets (§3–§14) stay **non-interactive** — no `onClick$` (see §31.6). **`Button`** (§17) is the first widget that accepts Qwik event handlers.
+Layout widgets (§3–§14) stay **non-interactive** — no `onClick$` (see §41.6). **`Button`** (§17) is the first widget that accepts Qwik event handlers.
 
 Conventions for all interactive widgets:
 
@@ -226,11 +236,25 @@ src/
     ├── single-child-scroll-view/
     ├── list-view/
     ├── grid-view/
-    └── media-query/
-        ├── media-query.tsx
+    ├── media-query/
+    │   ├── media-query.tsx
+    │   ├── types.ts
+    │   └── index.ts
+    ├── text-field/
+    │   ├── text-field.tsx
+    │   ├── types.ts
+    │   └── index.ts
+    ├── text-form-field/
+    │   ├── text-form-field.tsx
+    │   ├── types.ts
+    │   └── index.ts
+    └── form/
+        ├── form.tsx
         ├── types.ts
         └── index.ts
 ```
+
+No `input-decoration/` widget folder — `InputDecoration` is exported from `_shared/types.ts` (§28, Decision #78).
 
 Package entry (`src/index.ts`) re-exports:
 
@@ -259,6 +283,9 @@ export { SingleChildScrollView } from "./lib/single-child-scroll-view";
 export { ListView } from "./lib/list-view";
 export { GridView } from "./lib/grid-view";
 export { MediaQuery, useMediaQuery } from "./lib/media-query";
+export { TextField } from "./lib/text-field";
+export { TextFormField } from "./lib/text-form-field";
+export { Form } from "./lib/form";
 
 // Prop types
 export type { RowProps } from "./lib/row";
@@ -597,8 +624,8 @@ export const BoxFit = {
 | `fill`        | `fill`           | Stretch to fill; may distort aspect ratio.                            |
 | `contain`     | `contain`        | Letterbox inside bounds.                                              |
 | `cover`       | `cover`          | Crop to fill bounds.                                                  |
-| `fitWidth`    | `none` + sizing  | Scale down so width fits; height may clip. **Deferred in v1.1 impl (§30.5).** |
-| `fitHeight`   | `none` + sizing  | Scale down so height fits; width may clip. **Deferred in v1.1 impl (§30.5).** |
+| `fitWidth`    | `none` + sizing  | Scale down so width fits; height may clip. **Deferred in v1.1 impl (§40.5).** |
+| `fitHeight`   | `none` + sizing  | Scale down so height fits; width may clip. **Deferred in v1.1 impl (§40.5).** |
 | `none`        | `none`           | Intrinsic size; may overflow.                                         |
 | `scaleDown`   | `scale-down`     | Like `contain` but never upscale. **Default for `Image`.**            |
 
@@ -729,11 +756,82 @@ export const Breakpoint = {
 | Consumer | Usage |
 | -------- | ----- |
 | `MediaQuery` / `useMediaQuery()` | `MediaQueryData.breakpoint`; derived `isMobile` / `isTablet` / `isDesktop` |
-| `Responsive<T>` (v2+, §31.7) | `Partial<Record<Breakpoint, T>>` or alias map |
-| `ThemeData` (v1.5+, §34.4) | Per-tier design tokens |
+| `Responsive<T>` (v2+, §41.7) | `Partial<Record<Breakpoint, T>>` or alias map |
+| `ThemeData` (v1.5+, §44.4) | Per-tier design tokens |
 | Responsive widget props (v2+) | e.g. `padding?: Responsive<EdgeInsets>` |
 
-**Not in v1.25:** `xs`–`xl` enum members — reserved for `Responsive<T>` string keys (§31.7). Additive enum members (e.g. `largeDesktop`) may ship in a future semver minor.
+**Not in v1.25:** `xs`–`xl` enum members — reserved for `Responsive<T>` string keys (§41.7). Additive enum members (e.g. `largeDesktop`) may ship in a future semver minor.
+
+### 1.29 `InputType` — `TextField` (v1.3)
+
+Maps to HTML `<input type="">`. Flutter text-field keyboard types where applicable.
+
+```ts
+export const InputType = {
+  text:            "text",
+  password:        "password",
+  email:           "email",
+  url:             "url",
+  tel:             "tel",
+  search:          "search",
+  number:          "number",
+  date:            "date",
+  time:            "time",
+  datetimeLocal:   "datetime-local",
+  month:           "month",
+  week:            "week",
+  color:           "color",
+} as const;
+```
+
+**Used by:** `TextField` / `TextFormField` `type` prop (§29).
+
+**Excluded from `InputType` (v1.3):**
+
+| Excluded | Reason |
+| -------- | ------ |
+| `file` | Separate upload widget — not text entry |
+| `hidden` | Not a visible field |
+| `image` | Submit chrome, not text entry |
+| `range` | Separate slider widget |
+| `reset` / `submit` | Use `<Button type="reset">` / `type="submit">` (§17) |
+| `multiline` | **Not an `InputType`** — use `maxLines > 1` on `TextField` (§29) |
+
+There is no HTML `type="multiline"`. Multiline text uses `<textarea>` when `maxLines > 1`.
+
+### 1.30 `AutovalidateMode` — `Form` (v1.3)
+
+Flutter [`AutovalidateMode`](https://api.flutter.dev/flutter/widgets/AutovalidateMode.html).
+
+```ts
+export const AutovalidateMode = {
+  disabled:            "disabled",
+  onUserInteraction:   "onUserInteraction",
+  always:              "always",
+} as const;
+```
+
+**Used by:** `Form.autovalidateMode` (§31). Validation timing in §44.
+
+**`onUserInteraction`:** run `validator$` on **`input`** after the field is touched (Decision #74, F6).
+
+### 1.31 `InputMode` — `TextField` (v1.3)
+
+Maps to HTML `inputmode=""` — keyboard hint only; does not replace `type` or `validator$`.
+
+```ts
+export const InputMode = {
+  text:     "text",
+  search:   "search",
+  email:    "email",
+  tel:      "tel",
+  url:      "url",
+  numeric:  "numeric",
+  decimal:  "decimal",
+} as const;
+```
+
+**Used by:** `TextField.inputMode` (§29). Default: derive from `type` where sensible (e.g. `InputType.email` → `InputMode.email`).
 
 ---
 
@@ -821,6 +919,21 @@ export interface InteractiveProps {
   onClick$?: QRL<(event: MouseEvent, element: HTMLElement) => void>;
   disabled?: boolean;
 }
+
+// §38 InputDecoration — configuration object, not a widget.
+export interface InputDecoration {
+  label?: string;
+  placeholder?: string;
+  helperText?: string;
+  errorText?: string;
+  required?: boolean;
+  prefix?: string;
+  suffix?: string;
+}
+
+// §41 Form
+export type FormValues = Record<string, unknown>;
+export type FormFieldValidator = (value: unknown) => string | undefined;
 ```
 
 **Notes:**
@@ -829,6 +942,7 @@ export interface InteractiveProps {
 - `AriaAttributes` / `DataAttributes` use template-literal-key index signatures so any `aria-*` or `data-*` attribute typechecks without us having to enumerate them. `data-testid` is no longer a special-cased prop — it's covered by the `data-*` index.
 - All widget prop interfaces (`RowProps`, `ColumnProps`, `ContainerProps`, …) extend `BaseProps` either directly or via `FlexProps`, so every widget gets accessibility passthrough for free.
 - `ContainerTag` is shared by `Container` and `Card`. `InteractiveProps` is extended only by `Button` in v1.1.
+- `InputDecoration` is a **type only** — no `<InputDecoration>` component (Decision #78).
 
 ---
 
@@ -1686,7 +1800,7 @@ export interface CardProps extends BaseProps {
 | ----------------- | --------- | ---------------------------------------------------------------------------------------- |
 | `as`              | `"div"`   | Reuses `ContainerTag` (§2). Use `"article"` for feed/list cards.                          |
 | `elevation`       | `1`       | Maps to layered `box-shadow` presets (0 = flat). Ignored when `boxShadow` is set.        |
-| `margin`          | —         | `EdgeInsets` (§0.3). Flutter default margin is `4` — **not** applied by default (§30.1). |
+| `margin`          | —         | `EdgeInsets` (§0.3). Flutter default margin is `4` — **not** applied by default (§40.1). |
 | `padding`         | —         | `EdgeInsets`.                                                                            |
 | `backgroundColor` | —         | CSS color string.                                                                        |
 | `borderRadius`    | —         | Same shape as `Container` (§5).                                                          |
@@ -1895,7 +2009,7 @@ export interface ButtonProps extends BaseProps, InteractiveProps {
   /** Only when `as="button"`. Default `"button"` (prevents accidental form submit). */
   type?: "button" | "submit" | "reset";
 
-  /** When set, renders navigation (see §30.2). */
+  /** When set, renders navigation (see §40.2). */
   href?: string;
   target?: string;
   rel?: string;
@@ -1917,7 +2031,7 @@ export interface ButtonProps extends BaseProps, InteractiveProps {
 | `borderRadius`    | variant default         |                                                               |
 | `border`          | variant default         | Most relevant for `outlined`.                                 |
 | `elevation`       | `1`                     | Only for `elevated` variant.                                  |
-| `href`            | —                       | Link navigation; see open questions §30.2.                    |
+| `href`            | —                       | Link navigation; see open questions §40.2.                    |
 | _base props_      | —                       | `aria-label` required for icon-only buttons (documented).     |
 
 > Label content is **slotted** (`<Button>Save</Button>`). Icon-only buttons are v1.1 without a dedicated `Icon` widget — use slotted markup + `aria-label`.
@@ -1980,7 +2094,7 @@ TextButton(
 - **`onPressed` → `onClick$`** — Qwik idiom, not Flutter name (Principle #5: Qwik resumability first).
 - **`styleFrom` / `ButtonStyle`** not exposed — flat decoration props only (same philosophy as `Container`).
 - **`autofocus`**, **`clipBehavior`**, **`isSemanticButton`** — deferred.
-- Layout widgets remain non-interactive (§31.6); `Button` is the pattern for future `Link`, `IconButton`.
+- Layout widgets remain non-interactive (§41.6); `Button` is the pattern for future `Link`, `IconButton`.
 
 ### Future extensibility
 
@@ -1989,7 +2103,7 @@ TextButton(
 v1.1 ships a single density per `ButtonVariant` (padding, font size, min-height baked into CSS module presets). **`ButtonSize` is intentionally omitted from v1.1** because:
 
 1. **Surface area** — three sizes × four variants = twelve combinations to design, test, and keep accessible (touch targets, contrast).
-2. **No theme system yet** — sizes are really design tokens; without `ThemeData` (§34 theming), every size would be hard-coded duplication.
+2. **No theme system yet** — sizes are really design tokens; without `ThemeData` (§44 theming), every size would be hard-coded duplication.
 3. **Escape hatch exists** — callers can override `padding`, `fontSize` on slotted `Text`, or `class` / `style` until `size` lands.
 4. **Flutter parity timing** — Material 3 uses `ButtonStyle` + theme; we ship variants first, then density.
 
@@ -2203,7 +2317,7 @@ Image.network(
 
 - **`Image.asset` / bundled assets** — caller resolves paths (`/assets/…`); no build-time asset pipeline in v1.1.
 - **`loading` vs `placeholder`:** `loading` is the native `loading` attribute (`ImageLoading`); `placeholder` is the enum preset layer until `load`.
-- **`BoxFit.fitWidth` / `fitHeight`** — enum members exist; full CSS mapping deferred in implementation (§30.5). Use `contain` / `cover` until then.
+- **`BoxFit.fitWidth` / `fitHeight`** — enum members exist; full CSS mapping deferred in implementation (§40.5). Use `contain` / `cover` until then.
 - **`semanticLabel`** → `alt`; **`excludeFromSemantics`** → `decorative`.
 - **`color` / `colorBlendMode`** (Flutter tint) — deferred; use `filter` via `style` until v2.
 - **`gaplessPlayback`**, **`filterQuality`**, **`repeat`** — not applicable or deferred.
@@ -2297,7 +2411,7 @@ Visibility(
 ### Notes
 
 - **`replacement` widget** (Flutter) — deferred; use JSX conditional for alternate UI in v1.1.
-- **`maintainState`**, **`maintainAnimation`**, **`maintainInteractivity`** — largely N/A on web/Qwik SSR; see §34.4.
+- **`maintainState`**, **`maintainAnimation`**, **`maintainInteractivity`** — largely N/A on web/Qwik SSR; see §44.4.
 - **`Offstage`** analogue — `maintainSize={true}` + `visible={false}`.
 
 ### Future extensibility
@@ -2479,7 +2593,7 @@ AspectRatio(
 
 - **Width** comes from the parent constraint; **height** is computed from `aspectRatio` (Flutter parity). If parent has no width, ratio box may collapse — pair with `width="100%"` on parent flex child or `Container`.
 - Pairs naturally with **`Image`** (§18) and **`Stack`** overlays.
-- Invalid `aspectRatio <= 0` — TypeScript should document; runtime: treat as `1` or dev-only warning (implementation choice, §30.7).
+- Invalid `aspectRatio <= 0` — TypeScript should document; runtime: treat as `1` or dev-only warning (implementation choice, §40.7).
 
 ### Future extensibility
 
@@ -2515,7 +2629,7 @@ export interface SingleChildScrollViewProps extends BaseProps {
 | Prop           | Default           | Notes                                                                 |
 | -------------- | ----------------- | --------------------------------------------------------------------- |
 | `axis`         | `Axis.vertical`   | Vertical: `overflow-y: auto`, `overflow-x: hidden`; swap when horizontal. |
-| `reverse`      | `false`           | Inner flex `column-reverse` / `row-reverse` (see §29 S4).             |
+| `reverse`      | `false`           | Inner flex `column-reverse` / `row-reverse` (see §39 S4).             |
 | `padding`      | —                 | `EdgeInsets` on scrollport (Flutter `padding`).                       |
 | `clipBehavior` | `Clip.hardEdge`   | Maps to `overflow` on scrollport.                                     |
 | _base props_   | —                 | See §0.6.                                                             |
@@ -2589,18 +2703,18 @@ qwik-flutter-ui uses `axis={Axis.vertical}` (JSX).
 - Avoids duplicate terminology (`scrollDirection` is an `Axis` in Flutter — not a separate type).
 - Keeps the public API surface smaller (no `ScrollDirection` enum, no `scrollDirection` alias prop).
 
-**We do not ship** a `scrollDirection` prop or `ScrollDirection` enum in v1.2. See §31.11 and §29 S2.
+**We do not ship** a `scrollDirection` prop or `ScrollDirection` enum in v1.2. See §41.11 and §39 S2.
 
-- **Scrollbars:** system/UA only in v1.2; custom `Scrollbar` → §34 future scrolling.
+- **Scrollbars:** system/UA only in v1.2; custom `Scrollbar` → §44 future scrolling.
 - **SSR:** outer `<div>` scrollport + inner wrapper; `overflow: auto`; no scroll listeners (Principles #4–#7).
-- **Nested scroll:** caller responsibility; document in §29 S3.
+- **Nested scroll:** caller responsibility; document in §39 S3.
 - **Flex parent:** child scroll views inside `Column`/`Row` often need parent `min-height: 0` or bounded height (§9 `Expanded`).
 
 ### Future extensibility
 
 | Version | Addition                                                                 |
 | ------- | ------------------------------------------------------------------------ |
-| v2      | `ScrollController`, `physics`, `primary`, `keyboardDismissBehavior` — §34 |
+| v2      | `ScrollController`, `physics`, `primary`, `keyboardDismissBehavior` — §44 |
 | v2      | Custom `Scrollbar` widget                                                |
 
 ---
@@ -2622,7 +2736,7 @@ export interface ListViewProps extends BaseProps {
   padding?: EdgeInsets;
   /**
    * Main-axis gap between slotted children. Default `0`.
-   * Extension over Flutter (see §29 L5) — same idea as `Row.gap` / `Column.gap`.
+   * Extension over Flutter (see §39 L5) — same idea as `Row.gap` / `Column.gap`.
    */
   gap?: Length;
   /**
@@ -2696,7 +2810,7 @@ ListView(
 
 ### Accessibility considerations
 
-**Default behavior:** Do **not** automatically apply `role="list"` or `role="listitem"` (§29 L1).
+**Default behavior:** Do **not** automatically apply `role="list"` or `role="listitem"` (§39 L1).
 
 - Flutter `ListView` does not imply semantic list behavior; content is often cards, forms, or dashboards.
 - Consumers opt in via `role` on `BaseProps` when markup is a true list.
@@ -2717,7 +2831,7 @@ ListView(
 
 **Separators (v1.2):** Use `gap`, or insert `<Divider />` between mapped items — no `separatorBuilder$`.
 
-**`gap` (Flutter extension):** Flutter has no `gap` on `ListView`; spacing uses explicit widgets or `ListView.separated`. Documented in §29 L5 (same category as `Row.gap` in v1).
+**`gap` (Flutter extension):** Flutter has no `gap` on `ListView`; spacing uses explicit widgets or `ListView.separated`. Documented in §39 L5 (same category as `Row.gap` in v1).
 
 **`shrinkWrap`:** When `false` (default), scrollport fills parent (`flex: 1` + `min-height: 0` in flex layouts). When `true`, sizes to content; parent must provide max height/width.
 
@@ -2730,7 +2844,7 @@ ListView(
 | **Flutter equivalent** | [`ScrollView.cacheExtent`](https://api.flutter.dev/flutter/widgets/ScrollView/cacheExtent.html) |
 | **Purpose** | Overscan buffer for lazy lists |
 | **Why deferred** | Meaningless until `itemBuilder$` + viewport culling (v2) |
-| **Milestone** | **v2** — §34 Future ListView enhancements |
+| **Milestone** | **v2** — §44 Future ListView enhancements |
 
 Do **not** add `cacheExtent` to v1.2 `ListViewProps`.
 
@@ -2749,14 +2863,14 @@ qwik-flutter-ui uses `axis={Axis.vertical}` (JSX).
 - Consistent across scrolling widgets and future scrolling widgets.
 - Avoids duplicate terminology and keeps the API surface smaller.
 
-**We do not ship** a `scrollDirection` prop or `ScrollDirection` enum in v1.2. See §31.11 and §29 S2.
+**We do not ship** a `scrollDirection` prop or `ScrollDirection` enum in v1.2. See §41.11 and §39 S2.
 
 ### Future extensibility
 
 | Version | Addition                                                        |
 | ------- | --------------------------------------------------------------- |
 | v2      | `itemBuilder$`, `itemCount`, `separatorBuilder$`, `cacheExtent` |
-| v2      | `ScrollController`, virtualization — §34                        |
+| v2      | `ScrollController`, virtualization — §44                        |
 
 ---
 
@@ -2856,7 +2970,7 @@ GridView.count(
 
 ### Notes
 
-**Spacing (G3):** `gap` + `mainAxisSpacing` — not `runSpacing`. `mainAxisSpacing` matches `SliverGridDelegate`; `gap` is the `crossAxisSpacing` analogue (§29 G3).
+**Spacing (G3):** `gap` + `mainAxisSpacing` — not `runSpacing`. `mainAxisSpacing` matches `SliverGridDelegate`; `gap` is the `crossAxisSpacing` analogue (§39 G3).
 
 **CSS mapping** *(default `axis={Axis.vertical}`)*:
 
@@ -2885,16 +2999,16 @@ qwik-flutter-ui uses `axis={Axis.vertical}` (JSX).
 - Consistent across scrolling widgets and future scrolling widgets.
 - Avoids duplicate terminology and keeps the API surface smaller.
 
-**We do not ship** a `scrollDirection` prop or `ScrollDirection` enum in v1.2. See §31.11 and §29 S2.
+**We do not ship** a `scrollDirection` prop or `ScrollDirection` enum in v1.2. See §41.11 and §39 S2.
 
 - **SSR:** CSS grid + overflow scrollport only; no measurement JS.
-- **`columns` + `minItemWidth`:** both ship in v1.2; `columns` takes precedence (§29 G4).
+- **`columns` + `minItemWidth`:** both ship in v1.2; `columns` takes precedence (§39 G4).
 
 ### Future extensibility
 
 | Version | Addition                                      |
 | ------- | --------------------------------------------- |
-| v2      | `SliverGrid`, builder delegates — §34         |
+| v2      | `SliverGrid`, builder delegates — §44         |
 | v2      | `ScrollController`                            |
 
 ---
@@ -2912,7 +3026,7 @@ Flutter developers routinely call `MediaQuery.of(context)` for layout width, ori
 - Responsive padding, columns, and layout switches (`Row` vs `Column`) without ad-hoc `window` access in every component.
 - Foundation for responsive **`GridView`** (§24) — `columns` vs `minItemWidth` from `useMediaQuery()`.
 - Prerequisite for **forms** (v1.3+) — keyboard `viewInsets` deferred, but viewport tier is needed for field density.
-- Prerequisite for **`Responsive<T>`** (v2+, §31.7) and **`ThemeData`** per-tier tokens (v1.5+).
+- Prerequisite for **`Responsive<T>`** (v2+, §41.7) and **`ThemeData`** per-tier tokens (v1.5+).
 
 **Principles:**
 
@@ -2995,7 +3109,7 @@ export function useMediaQuery(): MediaQueryData;
 | `isMobile`, `isTablet`, `isDesktop` | Ship | **Derived** from `breakpoint`; mutually exclusive (§27 M10-C) |
 | `devicePixelRatio` | Defer | v2+ |
 | `textScaleFactor` | Defer | Forms / a11y milestone |
-| `platformBrightness` | Defer | Theming §34.4 |
+| `platformBrightness` | Defer | Theming §44.4 |
 | `viewInsets` | Defer | Forms v1.3+; `VisualViewport` |
 | `padding` / `viewPadding` | Defer | **`SafeArea` v2** (§34) |
 
@@ -3003,7 +3117,7 @@ export function useMediaQuery(): MediaQueryData;
 
 **`initialData` normalization:** If `breakpoint` and booleans conflict, **`breakpoint` wins**; recompute booleans; dev warning in development. Documentation examples use `breakpoint: Breakpoint.mobile`, not `isMobile: true` alone.
 
-**Classification:** Compare `width` to merged thresholds → one `Breakpoint` → derive booleans. Three tiers only on `MediaQueryData` (`mobile` / `tablet` / `desktop`). Finer `xs`–`xl` keys reserved for **`Responsive<T>`** v2+ (§31.7).
+**Classification:** Compare `width` to merged thresholds → one `Breakpoint` → derive booleans. Three tiers only on `MediaQueryData` (`mobile` / `tablet` / `desktop`). Finer `xs`–`xl` keys reserved for **`Responsive<T>`** v2+ (§41.7).
 
 ### Usage
 
@@ -3148,7 +3262,7 @@ Flutter `SafeArea` reads `MediaQuery.padding` / `viewPadding`. v1.25 does **not*
 
 #### Relationship to `Responsive<T>` (v2+)
 
-v1.25: imperative `useMediaQuery()`. v2+: declarative props, e.g. `width?: Responsive<Length>` keyed by shared **`Breakpoint`** (§31.7). `xs`–`xl` optional on `Responsive<T>` only — not on `MediaQueryData`.
+v1.25: imperative `useMediaQuery()`. v2+: declarative props, e.g. `width?: Responsive<Length>` keyed by shared **`Breakpoint`** (§41.7). `xs`–`xl` optional on `Responsive<T>` only — not on `MediaQueryData`.
 
 #### Relationship to `ThemeData` (v1.5+)
 
@@ -3192,7 +3306,7 @@ Candidates for v1.25. **Exactly two** new §1 entries — no others.
 
 ## 27. v1.25 MediaQuery open questions
 
-Resolve before v1.25 implementation. Record approvals in §33 decisions log.
+Resolve before v1.25 implementation. Record approvals in §43 decisions log.
 
 | ID | Topic | Recommendation |
 | -- | ----- | -------------- |
@@ -3280,7 +3394,7 @@ Resolve before v1.25 implementation. Record approvals in §33 decisions log.
 
 **Options:** (A) Defer. (B) Ship read-only booleans.
 
-**Recommendation:** **(A)** — theming §34.4 owns brightness; keep v1.25 focused.
+**Recommendation:** **(A)** — theming §44.4 owns brightness; keep v1.25 focused.
 
 ### M10 — Breakpoint classification model
 
@@ -3298,7 +3412,480 @@ Resolve before v1.25 implementation. Record approvals in §33 decisions log.
 
 ---
 
-## 28. v1.2 scrolling — shared enums review
+## 28. `InputDecoration`
+
+Configuration object for text field chrome — label, placeholder, helper, error, and adornments. Flutter's [`InputDecoration`](https://api.flutter.dev/flutter/material/InputDecoration-class.html).
+
+**Not a widget.** qwik-flutter-ui exports `InputDecoration` as a **TypeScript interface** only (Decision #78, F4). `TextField` and `TextFormField` compose native `<input>` / `<textarea>` plus semantic `<label>` and helper/error elements. There is **no** `<InputDecoration>` component and **no** `src/lib/input-decoration/` folder (§0.10).
+
+### Purpose
+
+- Single configuration object shared by `TextField` and `TextFormField`.
+- Flutter parity for `labelText`, `hintText`, `helperText`, `errorText`, prefix/suffix.
+- Web-native mapping: `placeholder`, `htmlFor` / `id` wiring, `aria-describedby`.
+
+### Type
+
+```ts
+// src/lib/_shared/types.ts (or colocated in text-field/types.ts — see §32)
+export interface InputDecoration {
+  /** Visible label; maps to <label for={inputId}>. Flutter: labelText */
+  label?: string;
+  /** Native placeholder. Flutter: hintText */
+  placeholder?: string;
+  /** Helper copy; linked via aria-describedby. Flutter: helperText */
+  helperText?: string;
+  /** Error message when invalid. Flutter: errorText */
+  errorText?: string;
+  /** Visual required indicator; pairs with required on the control */
+  required?: boolean;
+  /** Leading adornment — string or slotted content */
+  prefix?: string;
+  /** Trailing adornment — string or slotted content */
+  suffix?: string;
+}
+```
+
+| Prop | v1.3 | Notes |
+| ---- | ---- | ----- |
+| `label` | Ship | `<label for={inputId}>` |
+| `placeholder` | Ship | HTML `placeholder` (F3 recommends this name over `hintText`) |
+| `helperText` | Ship | `{id}-helper` in `aria-describedby` |
+| `errorText` | Ship | `{id}-error`; `aria-invalid` on control when set |
+| `required` | Ship | Visual indicator + `aria-required` on input (not decoration-only) |
+| `prefix` / `suffix` | Ship | Optional slot or string |
+| `prefixIcon` / `suffixIcon` | Defer | No `Icon` widget in v1.3 — slot SVG in `prefix`/`suffix` |
+| `counterText` | Defer | Open question F5 |
+| `disabled` / `readOnly` | On `TextField` | Style via field props; do not duplicate on decoration |
+
+### Usage
+
+```tsx
+<TextField
+  decoration={{
+    label: "Email",
+    placeholder: "you@example.com",
+    helperText: "We never share your email.",
+  }}
+  type={InputType.email}
+  autoComplete="email"
+/>
+```
+
+### Flutter equivalent
+
+```dart
+InputDecoration(
+  labelText: 'Email',
+  hintText: 'you@example.com',
+  helperText: 'We never share your email.',
+)
+```
+
+### Accessibility considerations
+
+- **Label association:** when `label` is set, render `<label for={inputId}>`. Do not rely on placeholder alone.
+- **`aria-describedby`:** space-separated ids `{inputId}-helper` and `{inputId}-error` when present.
+- **Errors:** `role="alert"` on error text when non-empty (§35, F8, Decision #75).
+
+### Notes
+
+- **`hintText` → `placeholder`** on the type (web idiom); document Flutter mapping (F3 open).
+- **Deferred:** `floatingLabel`, `border`, `filled`, `isDense`, `contentPadding`, theme defaults (`InputDecorationTheme` v1.5+).
+
+### Future extensibility
+
+- `InputDecorationTheme` (v1.5) applies defaults when props omitted.
+- `counterText` / `buildCounter` may ship after F5 is resolved.
+
+---
+
+## 29. `TextField`
+
+Single-line or multiline text entry. Flutter's [`TextField`](https://api.flutter.dev/flutter/material/TextField-class.html).
+
+Renders a native **`<input>`** when `maxLines === 1` (default) or **`<textarea>`** when `maxLines > 1`. Never `<div contenteditable>` (Principle #3).
+
+### Props
+
+```ts
+export interface TextFieldProps extends BaseProps {
+  decoration?: InputDecoration;
+  /** Optional — standalone fields only. Required on TextFormField (§30, Decision #79). */
+  name?: string;
+  value?: string;
+  defaultValue?: string;
+  onInput$?: QRL<(value: string, ev: InputEvent) => void>;
+  type?: InputType;           // §1.29
+  inputMode?: InputMode;      // §1.31 — keyboard hint; not validation
+  disabled?: boolean;
+  readOnly?: boolean;
+  required?: boolean;
+  autoFocus?: boolean;
+  maxLength?: number;
+  minLength?: number;
+  /** Default 1 → <input>; >1 → <textarea> */
+  maxLines?: number;
+  minLines?: number;
+  /** HTML autocomplete token (Decision #73, F12) */
+  autoComplete?: string;
+}
+```
+
+| Prop | Default | Notes |
+| ---- | ------- | ----- |
+| `decoration` | — | `InputDecoration` (§28) |
+| `name` | — | Optional; omitted outside `<Form>` |
+| `value` | — | Controlled value |
+| `defaultValue` | — | SSR / uncontrolled initial (F2 open) |
+| `onInput$` | — | **Only** change callback (F11, Decision #77); no `onChange$` |
+| `type` | `InputType.text` | Maps to `<input type="">`; not used for multiline branch |
+| `inputMode` | derived from `type` | Override HTML `inputmode` hint (§1.31) |
+| `maxLines` | `1` | `> 1` selects `<textarea>` |
+| `minLines` | — | Multiline sizing hint only |
+| `autoComplete` | — | Passthrough to `autocomplete` attribute |
+
+### Textarea rendering
+
+| Condition | Element | Flutter parity |
+| --------- | ------- | -------------- |
+| `maxLines === 1` | `<input>` | Single-line `TextField` |
+| `maxLines > 1` | `<textarea>` | Multiline `TextField` |
+
+**No `InputType.multiline`** — use `maxLines > 1` (§1.29 Notes).
+
+**No public `rows` / `cols` props** — map `minLines` / `maxLines` to native `rows` internally (implementation detail).
+
+### Usage
+
+```tsx
+const email = useSignal("");
+
+<TextField
+  decoration={{ label: "Email", placeholder: "you@example.com" }}
+  type={InputType.email}
+  inputMode={InputMode.email}
+  autoComplete="email"
+  value={email.value}
+  onInput$={(v) => (email.value = v)}
+/>
+
+<TextField
+  decoration={{ label: "Bio" }}
+  maxLines={4}
+  minLines={2}
+  defaultValue="Hello"
+/>
+```
+
+### Flutter equivalent
+
+```dart
+TextField(
+  decoration: InputDecoration(labelText: 'Email', hintText: 'you@example.com'),
+  keyboardType: TextInputType.emailAddress,
+  maxLines: 1,
+)
+```
+
+### Accessibility considerations
+
+- Real `<input>` or `<textarea>`; stable `id` via `useId()` when not provided (§36).
+- `aria-invalid` when `decoration.errorText` or validator error is shown.
+- `aria-describedby` joins helper and error ids.
+
+### Notes
+
+- **`obscureText`** → `type={InputType.password}`.
+- **`TextEditingController`** deferred v2 — use `value` + `onInput$` + signals.
+- **`onChanged`** not shipped — `onInput$` only (§0.7).
+- Deferred: `inputFormatters`, `FocusNode`, `textCapitalization`, `AutofillHint` enum (v1.5+).
+
+### Future extensibility
+
+- `TextEditingController`, `onChange$`, debounced validators (v2).
+
+---
+
+## 30. `TextFormField`
+
+`TextField` integrated with `Form` validation and submit payload. Flutter's [`TextFormField`](https://api.flutter.dev/flutter/material/TextFormField-class.html).
+
+**Composes `TextField`** — does not duplicate markup (shared implementation module).
+
+### Props
+
+```ts
+export interface TextFormFieldProps extends Omit<TextFieldProps, "name"> {
+  /** Required — form registration key (Decision #79, F7) */
+  name: string;
+  validator$?: QRL<(value: string) => string | undefined>;
+}
+```
+
+| Prop | Notes |
+| ---- | ----- |
+| `name` | **Required** — submit payload key, validation scope |
+| `validator$` | Returns error message or `undefined` when valid |
+| _(inherits)_ | All `TextFieldProps` except `name` |
+
+### Usage
+
+```tsx
+<Form
+  autovalidateMode={AutovalidateMode.onUserInteraction}
+  onSubmit$={(values) => console.log(values.email)}
+>
+  <TextFormField
+    name="email"
+    decoration={{ label: "Email", errorText: serverError }}
+    type={InputType.email}
+    validator$={(v) => (v.includes("@") ? undefined : "Invalid email")}
+  />
+  <Button type="submit">Sign in</Button>
+</Form>
+```
+
+### Flutter equivalent
+
+```dart
+TextFormField(
+  decoration: InputDecoration(labelText: 'Email'),
+  validator: (v) => v.contains('@') ? null : 'Invalid email',
+)
+```
+
+### Notes
+
+- Validation timing from `Form.autovalidateMode` (§34).
+- `decoration.errorText` may be set by validator result or server props.
+
+---
+
+## 31. `Form`
+
+Groups fields and coordinates validation / submit. Flutter's [`Form`](https://api.flutter.dev/flutter/widgets/Form-class.html).
+
+Renders native **`<form>`**. Use `<Button type="submit">` (§17) to submit.
+
+### Props
+
+```ts
+export type FormValues = Record<string, unknown>;
+
+export type FormFieldValidator = (value: unknown) => string | undefined;
+
+export interface FormProps extends BaseProps {
+  onSubmit$?: QRL<(values: FormValues, ev: SubmitEvent) => void>;
+  autovalidateMode?: AutovalidateMode;
+  action?: string;
+  method?: "get" | "post";
+}
+```
+
+| Prop | Default | Notes |
+| ---- | ------- | ----- |
+| `onSubmit$` | — | Called with `FormValues` when valid; blocked when invalid |
+| `autovalidateMode` | `disabled` | §1.30; F6 → validate on `input` after touched |
+| `action` / `method` | — | Native HTML passthrough; progressive enhancement |
+| _base props_ | — | §0.6 |
+
+### Scope (v1.3)
+
+| Feature | Ship |
+| ------- | ---- |
+| `<form>` + `onSubmit$` | Yes |
+| `autovalidateMode` | Yes |
+| `TextFormField` registration via context | Yes |
+| Block submit when invalid | Yes |
+| Server `errorText` via props | Document pattern only |
+
+**Deferred:** `reset()`, `FormState` / `useForm()`, async validators, `FormField<T>`, field arrays (v2).
+
+### Usage
+
+```tsx
+<Form onSubmit$={(values) => save(values as { email: string })}>
+  <TextFormField name="email" decoration={{ label: "Email" }} />
+  <Button type="submit">Submit</Button>
+</Form>
+```
+
+### Notes
+
+- **`noValidate`:** recommended when using custom `validator$` (F1 open) to avoid duplicate browser UI.
+- v1.3 collects **string** values from text fields; `FormValues` is `unknown` for v1.4+ controls (Decision #76).
+- No `GlobalKey<FormState>` — Qwik context for registration (§41.13).
+
+---
+
+## 32. v1.3 forms — shared types review
+
+| Candidate | Verdict | Location |
+| --------- | ------- | -------- |
+| `InputDecoration` | **Ship** | `src/lib/_shared/types.ts` (§28) |
+| `FormFieldValidator` | **Ship** | `(value: unknown) => string \| undefined` |
+| `FormValues` | **Ship** | `Record<string, unknown>` (Decision #76) |
+| `FormState` | **Defer** | v2 |
+| `FieldState` | **Defer** | Internal context only |
+
+### `FormValues`
+
+`Record<string, unknown>` forward-compatible with `Checkbox` (`boolean`), `Radio` (`string`), `Dropdown` (`string` \| `string[]`) in v1.4+. v1.3 submit payload is strings from `TextFormField`; consumers narrow at the boundary.
+
+---
+
+## 33. v1.3 forms — shared enums review
+
+### New §1 entries (v1.3)
+
+Add **`InputType`** (§1.29), **`AutovalidateMode`** (§1.30), **`InputMode`** (§1.31) to `src/lib/_shared/enums.ts`.
+
+| Candidate | Verdict |
+| --------- | ------- |
+| `ValidationMode` | **Reject** — duplicate of `AutovalidateMode` |
+| `TextCapitalization` | **Defer** v1.4+ |
+| `AutofillHint` | **Defer v1.5+** — use `autoComplete?: string` (Decision #73) |
+
+See §1.29–§1.31 for member lists and excluded `InputType` values.
+
+---
+
+## 34. v1.3 forms — validation strategy
+
+### Options
+
+| Option | Description |
+| ------ | ----------- |
+| **A** | Native HTML5 only |
+| **B** | Custom `validator$` only |
+| **C** | **Custom primary** + native hints (`required`, `type`, `minLength` / `maxLength`) |
+
+**Recommendation: (C)** — ship in v1.3 (F10 open for `noValidate` default).
+
+### Behavior
+
+- **`validator$`:** QRL returning `string | undefined` (error message). No throw.
+- **`Form`:** runs all validators on submit; calls `onSubmit$` only when every field valid.
+- **Errors:** surface via `decoration.errorText` + `aria-invalid` + `role="alert"` (§35).
+- **`<form noValidate>`:** when custom validation is active — avoid duplicate browser popups (F1).
+
+### Timing matrix
+
+| `autovalidateMode` | When `validator$` runs |
+| ------------------ | ---------------------- |
+| `disabled` | Submit only |
+| `onUserInteraction` | On **`input`** after field is **touched** (F6, Decision #74) |
+| `always` | On every `input` from mount |
+
+### SSR
+
+- `validator$` does not run on server (QRL client). Optional server-provided `decoration.errorText` on fields after failed POST.
+
+---
+
+## 35. v1.3 forms — accessibility review
+
+Cross-widget rules for §28–§31:
+
+- **Labels:** prefer visible `<label for={inputId}>` from `decoration.label`; `aria-label` only when no visible label.
+- **`aria-describedby`:** `{inputId}-helper` and `{inputId}-error` when present.
+- **Required:** native `required` + visible indicator when `required` is true.
+- **Errors:** `role="alert"` on non-empty error text (Decision #75). Do not stack `aria-live` on the same node.
+- **Keyboard:** native tab order; `:focus-visible` in CSS module.
+- **Submit:** use `<Button type="submit">` with native `disabled` when appropriate (§17) — not `pointer-events` only.
+
+**F6 + F8:** `onInput` validation may update errors frequently; intentional for immediate feedback.
+
+---
+
+## 36. v1.3 forms — SSR and resumability review
+
+- **Initial values:** `defaultValue` in SSR HTML; controlled `value` from server props for resume (F2 open).
+- **Stable IDs:** prefer Qwik **`useId()`** (or framework-approved equivalent) for `inputId`, `{id}-helper`, `{id}-error`. **Reject** module-level counters or `Math.random()` — hydration mismatch risk. Optional consumer `id?:` override unchanged.
+- **Validation:** no `validator$` on server; server may pass `decoration.errorText`.
+- **Progressive enhancement:** native `action` / `method` works without JS; enhanced with `onSubmit$` + validation when hydrated.
+- **Qwik City:** document POST + re-render with errors — out of library scope (example only).
+
+---
+
+## 37. v1.3 Forms open questions
+
+Resolve before **widget implementation** (Phase 12, §45). API specs in §28–§36 may be authored while items below are open.
+
+### Open questions summary
+
+| Status | IDs | Notes |
+| ------ | --- | ----- |
+| **Approved** (§43 #73–#79) | F4, F6, F7, F8, F9, F11, F12 | Frozen in widget specs |
+| **Open** | F1, F2, F3, F5, F10 | Block Phase 12 implementation |
+
+### Open questions table
+
+| ID | Topic | Status |
+| --- | ----- | ------ |
+| F1 | `<form noValidate>` default with custom validation | Open |
+| F2 | Controlled-only vs `defaultValue` + controlled | Open |
+| F3 | `placeholder` vs `hintText` on `InputDecoration` | Open |
+| F4 | `InputDecoration` type vs component | **Approved** — type only (#78) |
+| F5 | `counterText` / maxlength counter in v1.3 | Open |
+| F6 | `onUserInteraction` → validate on `input` | **Approved** (#74) |
+| F7 | `TextFormField.name` required | **Approved** (#79) |
+| F8 | Error `role="alert"` | **Approved** (#75) |
+| F9 | `FormValues` as `unknown` | **Approved** (#76) |
+| F10 | Native HTML5 + custom coexistence (Option C details) | Open |
+| F11 | `onInput$` only | **Approved** (#77) |
+| F12 | `autoComplete` as `string` | **Approved** (#73) |
+
+### F1 — `<form noValidate>` default
+
+**Question:** Should `<Form>` set `noValidate` by default when using custom `validator$`?
+
+**Recommendation:** **Yes** — default `noValidate` when any `TextFormField` registers a `validator$` or when `autovalidateMode !== disabled`. Allow opt-out prop if needed later.
+
+### F2 — Controlled vs `defaultValue`
+
+**Question:** Support only controlled `value`, or both `defaultValue` and `value`?
+
+**Recommendation:** **Both** — `defaultValue` for SSR / progressive enhancement; `value` + `onInput$` for controlled apps (mirror native inputs).
+
+### F3 — `placeholder` vs `hintText`
+
+**Question:** Primary name on `InputDecoration`?
+
+**Recommendation:** **`placeholder`** (web idiom); document Flutter `hintText` mapping in §28.
+
+### F5 — Character counter
+
+**Question:** Ship `counterText` or auto-counter from `maxLength` in v1.3?
+
+**Recommendation:** **Defer** — add in v1.4+ or when `InputDecorationTheme` lands.
+
+### F10 — Option C coexistence
+
+**Question:** How do native `required` / `type` interact with `validator$`?
+
+**Recommendation:** Custom `validator$` is authoritative for submit blocking and displayed errors; native attributes remain for accessibility and progressive enhancement without relying on browser validation UI when `noValidate` is set (F1).
+
+### Approved summaries (F4, F6–F9, F11–F12)
+
+See §43 decisions **#73–#79** and §28–§31 widget specs.
+
+### Final review checklist (v1.3 forms)
+
+| Check | Status |
+| ----- | ------ |
+| Flutter-first + web mappings | Pass |
+| Native `<input>` / `<textarea>` / `<form>` | Pass |
+| Accessibility | Pass |
+| SSR + `useId()` | Pass |
+| 3 enums only (§1.29–§1.31) | Pass |
+| 7 / 12 OQs approved | F1, F2, F3, F5, F10 open |
+| No `TextEditingController` / `FocusNode` / `FormState` | Pass |
+
+---
+
+## 38. v1.2 scrolling — shared enums review
 
 Candidates considered for v1.2. **None are added** to §1 unless listed below.
 
@@ -3312,14 +3899,14 @@ Candidates considered for v1.2. **None are added** to §1 unless listed below.
 
 ---
 
-## 29. v1.2 Scrolling open questions
+## 39. v1.2 Scrolling open questions
 
-Resolve before v1.2 implementation. Record approvals in §33 decisions log.
+Resolve before v1.2 implementation. Record approvals in §43 decisions log.
 
 | ID  | Widget / scope            | Topic                                      | Recommendation                          |
 | --- | ------------------------- | ------------------------------------------ | --------------------------------------- |
 | S1  | `SingleChildScrollView`   | Scrollbar styling                          | **(A)** System scrollbars only in v1.2  |
-| S2  | All scrolling             | `axis` vs `scrollDirection`                | **(A)** `axis` only — §34.11            |
+| S2  | All scrolling             | `axis` vs `scrollDirection`                | **(A)** `axis` only — §41.11            |
 | S3  | All scrolling             | Nested scroll                              | **(A)** Document caller responsibility    |
 | S4  | `SingleChildScrollView`   | `reverse` implementation                   | **(A)** Inner flex reverse              |
 | L1  | `ListView`                | Default list ARIA roles                    | **(B)** No automatic roles              |
@@ -3341,7 +3928,7 @@ Resolve before v1.2 implementation. Record approvals in §33 decisions log.
 
 **Question:** Reuse `axis` or introduce `scrollDirection` / `ScrollDirection`?
 
-**Recommendation:** **(A)** `axis` only. See §22–§24 Flutter parity note and §31.11.
+**Recommendation:** **(A)** `axis` only. See §22–§24 Flutter parity note and §41.11.
 
 ### S3 — Nested scroll
 
@@ -3381,9 +3968,9 @@ Resolve before v1.2 implementation. Record approvals in §33 decisions log.
 
 ---
 
-## 30. Open questions (approval required)
+## 40. Open questions (approval required)
 
-All items **approved** — recorded in §33 decisions #32–42. Retained here as an audit trail. Implementation PRs for v1.1 may proceed.
+All items **approved** — recorded in §43 decisions #32–42. Retained here as an audit trail. Implementation PRs for v1.1 may proceed.
 
 | ID    | Question | Options | Resolution |
 | ----- | -------- | ------- | ---------- |
@@ -3399,7 +3986,7 @@ All items **approved** — recorded in §33 decisions #32–42. Retained here as
 | 27.10 | **Default semantic tag for `Card`?** | (A) `"div"`. (B) `"article"`. | **(A) Approved** — decision #41. |
 | 27.11 | **`Align` implementation strategy?** | (A) CSS Grid (`place-items`). (B) Absolute positioning. | **(A) Approved** — decision #42. |
 
-### 30.8 Button loading state
+### 40.8 Button loading state
 
 **Question:** Should `Button` ship with loading support in v1.1?
 
@@ -3422,7 +4009,7 @@ All items **approved** — recorded in §33 decisions #32–42. Retained here as
 
 ---
 
-### 30.9 Image lazy loading
+### 40.9 Image lazy loading
 
 **Question:** What should be the default `loading` behavior for `Image`?
 
@@ -3444,7 +4031,7 @@ All items **approved** — recorded in §33 decisions #32–42. Retained here as
 
 ---
 
-### 30.10 Card semantic tag
+### 40.10 Card semantic tag
 
 **Question:** What should be the default semantic tag used by `Card`?
 
@@ -3465,7 +4052,7 @@ All items **approved** — recorded in §33 decisions #32–42. Retained here as
 
 ---
 
-### 30.11 Align implementation strategy
+### 40.11 Align implementation strategy
 
 **Question:** What implementation strategy should `Align` use internally?
 
@@ -3488,11 +4075,11 @@ All items **approved** — recorded in §33 decisions #32–42. Retained here as
 
 ---
 
-## 31. API consistency review
+## 41. API consistency review
 
 Findings from a self-review against Principles #1–#10 and the established conventions. All items below have been resolved or updated for v1.1.
 
-### 31.1 Confirmed consistent
+### 41.1 Confirmed consistent
 
 - **Naming.** All flex children use `flex?: number`, all clip props use the `Clip` enum, all alignment props use either `Alignment` or `*Alignment` enums per Flutter. Container's `backgroundColor` is distinct from Text's `color` because they're semantically different (background vs foreground).
 - **Defaults.** Flex defaults (`crossAxisAlignment: center`, `mainAxisSize: max`) match Flutter. `Stack.clipBehavior: hardEdge` matches Flutter. All other widgets default to `Clip.none` / `overflow: visible`.
@@ -3500,14 +4087,14 @@ Findings from a self-review against Principles #1–#10 and the established conv
 - **Type sharing.** `RowProps`/`ColumnProps` both alias `FlexProps`. Every widget extends `BaseProps`. `BorderRadius`, `BoxShadow`, `Gradient`, `BorderSide` are exported from `_shared/types.ts` and used consistently.
 - **Folder structure.** All widgets follow `lib/<widget>/{<widget>.tsx, types.ts, index.ts}` (+ optional `*.module.css`).
 
-### 31.2 Decisions encoded since the last review
+### 41.2 Decisions encoded since the last review
 
 - `Flexible` is now a v1 widget (§9), and `FlexFit` joins the enum catalog (§1.12). `Expanded`'s note now cross-references `Flexible`.
 - `MainAxisSize` already existed (§1.3) — this revision documents its behavior + CSS mapping properly. `Row` and `Column` prop tables now describe `min` vs `max` instead of just listing the type.
 - `Alignment` already existed (§1.9) — this revision adds the full CSS mapping table for both flex-context and stack-context consumers.
 - `BaseProps` now includes `role` and open `aria-*` / `data-*` index signatures (§2). `data-testid` is no longer special-cased.
 
-### 31.3 [RESOLVED] Semantic HTML `as` prop on `Text`
+### 41.3 [RESOLVED] Semantic HTML `as` prop on `Text`
 
 **Gap:** `Text` always rendering `<span>` violated Principle #2 (Semantic HTML). Headings, paragraphs, and labels need their proper tags for SEO and accessibility.
 
@@ -3517,7 +4104,7 @@ Findings from a self-review against Principles #1–#10 and the established conv
 as?: TextTag;   // "span" | "p" | "div" | "label" | "h1"..."h6" | "strong" | "em" | "small"
 ```
 
-### 31.4 [RESOLVED] Semantic HTML `as` prop on `Container`
+### 41.4 [RESOLVED] Semantic HTML `as` prop on `Container`
 
 **Gap:** `Container` always rendering `<div>` was fine for most layout cases, but `<section>`, `<article>`, `<header>`, `<footer>`, `<nav>`, `<aside>`, `<main>` are common and Principle #2 says we should support them.
 
@@ -3527,7 +4114,7 @@ as?: TextTag;   // "span" | "p" | "div" | "label" | "h1"..."h6" | "strong" | "em
 as?: ContainerTag;   // "div" | "section" | "article" | "header" | "footer" | "nav" | "aside" | "main"
 ```
 
-### 31.5 [RESOLVED] `Wrap.spacing` / `Wrap.runSpacing` naming asymmetry with `Row.gap` / `Column.gap`
+### 41.5 [RESOLVED] `Wrap.spacing` / `Wrap.runSpacing` naming asymmetry with `Row.gap` / `Column.gap`
 
 **Gap:** Within the same library, you use `gap` on `Row`/`Column` but `spacing`/`runSpacing` on `Wrap`. Inconsistent at first glance.
 
@@ -3535,13 +4122,13 @@ as?: ContainerTag;   // "div" | "section" | "article" | "header" | "footer" | "n
 
 **Recommendation:** **Keep as-is.** Document the asymmetry in `Wrap`'s notes (already done in §11). No action needed; flagged here so the choice is on the record.
 
-### 31.6 [UPDATED] Event handlers on layout widgets
+### 41.6 [UPDATED] Event handlers on layout widgets
 
 **Gap:** Layout widgets have no `onClick$`. A clickable card must not use `onClick$` on `Card`/`Container`.
 
 **Resolution:** **Unchanged for layout widgets.** `Button` (§17) is the v1.1 interactive primitive; `Link` / `Tappable` remain v2 (§34). `Card` stays presentational — wrap with `Button` or use `Button` with `href` for navigation.
 
-### 31.7 [RESOLVED] Responsive prop shape (deferred to v2)
+### 41.7 [RESOLVED] Responsive prop shape (deferred to v2)
 
 **Gap:** Principle #9 promises responsive support; v1 only delivers it via CSS strings (`width="50%"`, `padding="clamp(...)"`).
 
@@ -3554,7 +4141,7 @@ type ContainerProps = { width?: Responsive<Length>; … };
 
 Reserved in the roadmap. Avoid prop-name conflicts in v1 so we can adopt this non-breakingly later.
 
-### 31.8 [RESOLVED] `Length` accepts arbitrary strings
+### 41.8 [RESOLVED] `Length` accepts arbitrary strings
 
 **Gap:** `Length = number | string` lets users pass anything — including invalid CSS. We don't validate.
 
@@ -3573,7 +4160,7 @@ All review items resolved.
 | 23.7  | Responsive prop shape                             | Deferred to v2.                           |
 | 23.8  | `Length` allows arbitrary strings                 | Kept (pragmatic).                         |
 
-### 31.9 [NEW] v1.1 basic UI + layout consistency
+### 41.9 [NEW] v1.1 basic UI + layout consistency
 
 - **`Card` vs `Container`:** `Card` owns surface/elevation defaults; `Container` owns sizing/alignment/constraints. No prop duplication beyond shared decoration types.
 - **`Button.color` vs `Text.color`:** both mean foreground; `Container.backgroundColor` remains background.
@@ -3584,19 +4171,19 @@ All review items resolved.
 - **`Align` vs `Center`:** `Center` = centered `Align`; factors only on `Align` (§20).
 - **`AspectRatio`** uses CSS `aspect-ratio`; no client measurement (Principle #4).
 
-### 31.10 [NEW] v1.2 scrolling consistency
+### 41.10 [NEW] v1.2 scrolling consistency
 
 | Check | Status | Notes |
 | ----- | ------ | ----- |
 | Flutter parity primary | Pass | `mainAxisSpacing`, `columns`, `childAspectRatio`; `gap` as `crossAxisSpacing` analogue. |
-| `axis` not `scrollDirection` | Pass | §31.11; Flutter parity note in §22–§24. |
-| No new enums in v1.2 | Pass | §28 defers `ScrollDirection`, `ScrollPhysics`, `ScrollBehavior`. |
+| `axis` not `scrollDirection` | Pass | §41.11; Flutter parity note in §22–§24. |
+| No new enums in v1.2 | Pass | §38 defers `ScrollDirection`, `ScrollPhysics`, `ScrollBehavior`. |
 | CSS Grid documented | Pass | §24 CSS mapping table. |
-| Deferred APIs separated | Pass | v1.2 vs v2 in §23 Notes and §31. |
-| Accessibility | Pass | No default list/grid roles (§29 L1). |
+| Deferred APIs separated | Pass | v1.2 vs v2 in §23 Notes and §41. |
+| Accessibility | Pass | No default list/grid roles (§39 L1). |
 | SSR | Pass | CSS `overflow` / grid only in v1.2. |
 
-### 31.11 [NEW] Scrolling widgets — `axis` vs Flutter `scrollDirection`
+### 41.11 [NEW] Scrolling widgets — `axis` vs Flutter `scrollDirection`
 
 **Decision:** All v1.2 scrolling widgets expose **`axis?: Axis`**, not `scrollDirection`.
 
@@ -3606,7 +4193,7 @@ All review items resolved.
 
 **Justification:** Principle #10 (consistent prop names) + Principle #7 (smaller surface). Behavior matches Flutter; only the identifier differs.
 
-### 31.12 [NEW] v1.25 MediaQuery consistency
+### 41.12 [NEW] v1.25 MediaQuery consistency
 
 | Check | Status | Notes |
 | ----- | ------ | ----- |
@@ -3631,9 +4218,38 @@ All review items resolved.
 | `padding` / `viewInsets` | deferred | Yes — §25 Deferred APIs |
 | `MediaQuery.of()` static | not shipped | Yes |
 
+### 41.13 [NEW] v1.3 forms consistency
+
+| Check | Status | Notes |
+| ----- | ------ | ----- |
+| `InputDecoration` type only (F4, #78) | Pass | No `<InputDecoration>` component |
+| Native `<input>` / `<textarea>` / `<form>` | Pass | `maxLines` branch; no `contenteditable` |
+| `TextFormField` composes `TextField` | Pass | Shared implementation module |
+| `FormValues` forward-compatible | Pass | `Record<string, unknown>` (#76) |
+| `onInput$` only (F11) | Pass | No `onChange$` |
+| Error `role="alert"` (F8) | Pass | §35 |
+| SSR stable ids | Pass | `useId()` (§36) |
+| 3 new §1 enums only | Pass | `InputType`, `AutovalidateMode`, `InputMode` |
+| No controller / `FocusNode` / `FormState` | Pass | v2 / internal context |
+| 7 / 12 open questions approved | Pass | F1, F2, F3, F5, F10 block implementation |
+
+**Flutter parity review:**
+
+| Flutter | qwik-flutter-ui | Keep? |
+| ------- | --------------- | ----- |
+| `TextEditingController` | `value` + `onInput$` | Yes |
+| `InputDecoration.hintText` | `placeholder` | Yes (web idiom) |
+| `FormField` generic | `TextFormField` only v1.3 | Yes |
+| `GlobalKey<FormState>` | Form context | Yes |
+| `maxLines` > 1 | `<textarea>` | Yes |
+| `InputType.multiline` | `maxLines > 1` | Yes |
+| `onChanged` | `onInput$` only | Yes |
+| `autofillHints` | `autoComplete?: string` | Yes — `AutofillHint` v1.5+ |
+| `TextFormField.name` | required | Yes — optional on `TextField` |
+
 ---
 
-## 32. Summary table
+## 42. Summary table
 
 | Widget       | Children      | v1? | Key Flutter divergence                                                         |
 | ------------ | ------------- | --- | ------------------------------------------------------------------------------ |
@@ -3660,12 +4276,16 @@ All review items resolved.
 | `ListView`   | many (slot)   | 1.2 | `gap` extension; no default list ARIA roles; non-virtualized; `axis` not `scrollDirection` (§23). |
 | `GridView`   | many (slot)   | 1.2 | `gap` = `crossAxisSpacing`; `mainAxisSpacing`; `minItemWidth`; CSS Grid (§24).          |
 | `MediaQuery` | provider + hook | 1.25 | `useMediaQuery()` not `MediaQuery.of()`; `breakpoint` + derived flags; shared `Breakpoint` (§25). |
+| `InputDecoration` | — (type) | 1.3 | Configuration type only — not a widget (§28, Decision #78). |
+| `TextField` | — | 1.3 | `<input>` / `<textarea>`; `onInput$`; `InputType` / `InputMode` (§29). |
+| `TextFormField` | — | 1.3 | Composes `TextField`; `name` required; `validator$` (§30). |
+| `Form` | many (fields) | 1.3 | Native `<form>`; `FormValues`; `AutovalidateMode` (§31). |
 
 ---
 
-## 33. Decisions log
+## 43. Decisions log
 
-v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in §30.
+v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in §40.
 
 | #  | Decision                                                                                          | Resolution                                                              |
 | -- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -3700,17 +4320,17 @@ v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in 
 | 29 | **`Text.as` for semantic HTML**                                                                   | **Shipped in v1.** `TextTag` union; default `"span"` (§14).             |
 | 30 | **`Container.as` for semantic HTML**                                                              | **Shipped in v1.** `ContainerTag` union; default `"div"` (§5).          |
 | 31 | `BaseProps` accessibility passthrough                                                             | `role` + open `aria-*` / `data-*` index signatures (§2).                |
-| 32 | **`Card.margin` default** (§30.1)                                                                 | **No default margin** — caller opts in; document Flutter `margin: 4` in examples. |
-| 33 | **`Button` + `href`** (§30.2)                                                                     | **Automatically render `<a>`** when `href` is set (no `as="a"` required). |
-| 34 | **`ButtonVariant.elevated` in v1.1** (§30.3)                                                      | **Ship `elevated`** alongside `filled`, `outlined`, `text`.               |
-| 35 | **`Visibility` hidden behavior** (§30.4)                                                          | **Apply `inert`** (and `pointer-events: none`) when `visible={false}`.   |
-| 36 | **`Image` `BoxFit.fitWidth` / `fitHeight`** (§30.5)                                               | **Deferred** — v1.1 ships `fill`, `contain`, `cover`, `none`, `scaleDown` only. |
-| 37 | **v1.1 release grouping** (§30.6)                                                                 | **Single milestone** — all seven v1.1 widgets; implement `Button` last.  |
-| 38 | **`AspectRatio` invalid ratio** (§30.7)                                                            | **Clamp to `1`** and emit **dev warning** in development builds.          |
-| 39 | **`Button` loading state** (§30.8)                                                                | **Defer `loading` prop to v1.2** — keep v1.1 `Button` minimal.            |
-| 40 | **`Image` default `loading`** (§30.9)                                                             | **Default `ImageLoading.lazy`** (`loading="lazy"`); heroes opt into `eager`. |
-| 41 | **`Card` default semantic tag** (§30.10)                                                          | **Default `as="div"`**; consumers use `as="article"` when appropriate.  |
-| 42 | **`Align` implementation** (§30.11)                                                               | **CSS Grid** (`place-items`) — not absolute positioning.                  |
+| 32 | **`Card.margin` default** (§40.1)                                                                 | **No default margin** — caller opts in; document Flutter `margin: 4` in examples. |
+| 33 | **`Button` + `href`** (§40.2)                                                                     | **Automatically render `<a>`** when `href` is set (no `as="a"` required). |
+| 34 | **`ButtonVariant.elevated` in v1.1** (§40.3)                                                      | **Ship `elevated`** alongside `filled`, `outlined`, `text`.               |
+| 35 | **`Visibility` hidden behavior** (§40.4)                                                          | **Apply `inert`** (and `pointer-events: none`) when `visible={false}`.   |
+| 36 | **`Image` `BoxFit.fitWidth` / `fitHeight`** (§40.5)                                               | **Deferred** — v1.1 ships `fill`, `contain`, `cover`, `none`, `scaleDown` only. |
+| 37 | **v1.1 release grouping** (§40.6)                                                                 | **Single milestone** — all seven v1.1 widgets; implement `Button` last.  |
+| 38 | **`AspectRatio` invalid ratio** (§40.7)                                                            | **Clamp to `1`** and emit **dev warning** in development builds.          |
+| 39 | **`Button` loading state** (§40.8)                                                                | **Defer `loading` prop to v1.2** — keep v1.1 `Button` minimal.            |
+| 40 | **`Image` default `loading`** (§40.9)                                                             | **Default `ImageLoading.lazy`** (`loading="lazy"`); heroes opt into `eager`. |
+| 41 | **`Card` default semantic tag** (§40.10)                                                          | **Default `as="div"`**; consumers use `as="article"` when appropriate.  |
+| 42 | **`Align` implementation** (§40.11)                                                               | **CSS Grid** (`place-items`) — not absolute positioning.                  |
 | 43 | **v1.1 `Card` widget**                                                                            | Surface widget §15; shares decoration types; not a `Container` alias.     |
 | 44 | **v1.1 `Divider` widget**                                                                         | Unified `axis`; `<hr>` horizontal / `role="separator"` vertical.        |
 | 45 | **v1.1 `Button` widget**                                                                          | First interactive primitive; `InteractiveProps`; §0.7 conventions.      |
@@ -3726,13 +4346,13 @@ v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in 
 | 52 | **v1.1 `Align` widget**                                                                           | Layout positioning; `widthFactor`/`heightFactor`; §20.                  |
 | 53 | **v1.1 `AspectRatio` widget**                                                                     | Required ratio; CSS `aspect-ratio`; §21.                                |
 | 54 | **`ButtonSize` enum**                                                                             | Documented §1.26; **not** shipped until v1.2+.                          |
-| 55 | **Scrolling widgets**                                                                             | Specified §22–§24; implement after §29 open questions resolved.           |
-| 56 | **Forms + Theming**                                                                               | Roadmap-only §34.3–§34.5; no full API in v1.1.                           |
-| 57 | **Scrolling `axis` vs `scrollDirection`** (§29 S2, §31.11)                                        | **`axis` only** — no alias, no `ScrollDirection` enum.                    |
-| 58 | **`ListView` ARIA roles** (§29 L1)                                                                | **No automatic** `role="list"` / `listitem"`.                            |
-| 59 | **`ListView.gap` in v1.2** (§29 L5)                                                               | **Ship `gap`** — documented Flutter extension.                          |
-| 60 | **`GridView` spacing** (§29 G3)                                                                   | **`gap` + `mainAxisSpacing`** — not `runSpacing`.                       |
-| 61 | **`GridView` `columns` + `minItemWidth`** (§29 G4)                                                | **Ship both**; `columns` wins when both set.                            |
+| 55 | **Scrolling widgets**                                                                             | Specified §22–§24; implement after §39 open questions resolved.           |
+| 56 | **Forms + Theming**                                                                               | v1.3 forms specified §28–§37; v1.4–v1.5 roadmap §44.3–§44.5.              |
+| 57 | **Scrolling `axis` vs `scrollDirection`** (§39 S2, §41.11)                                        | **`axis` only** — no alias, no `ScrollDirection` enum.                    |
+| 58 | **`ListView` ARIA roles** (§39 L1)                                                                | **No automatic** `role="list"` / `listitem"`.                            |
+| 59 | **`ListView.gap` in v1.2** (§39 L5)                                                               | **Ship `gap`** — documented Flutter extension.                          |
+| 60 | **`GridView` spacing** (§39 G3)                                                                   | **`gap` + `mainAxisSpacing`** — not `runSpacing`.                       |
+| 61 | **`GridView` `columns` + `minItemWidth`** (§39 G4)                                                | **Ship both**; `columns` wins when both set.                            |
 | 62 | **M1 SSR defaults** (§27)                                                                         | Pending §27 approval — recommend mobile-first `360×640`, `Breakpoint.mobile`. |
 | 63 | **M2 breakpoint thresholds** (§27)                                                                | Pending — recommend `mobileMax: 599`, `tabletMax: 1023`.                  |
 | 64 | **M3 viewport source** (§27)                                                                      | Pending — recommend `innerWidth` / `innerHeight`.                       |
@@ -3744,14 +4364,21 @@ v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in 
 | 70 | **M9 prefers-* booleans** (§27)                                                                   | Pending — recommend defer.                                              |
 | 71 | **M10 breakpoint model** (§27)                                                                    | **(C) Approved** — `breakpoint` authoritative + derived booleans.       |
 | 72 | **M11 invalid breakpoints** (§27)                                                                 | **(C) Approved** — dev warning + default thresholds.                    |
+| **73** | **`TextField` / `TextFormField` `autoComplete`** (F12)                                            | **`autoComplete?: string`** — `AutofillHint` enum deferred **v1.5+**.    |
+| 74 | **`AutovalidateMode.onUserInteraction` timing** (F6)                                                | Validate on **`input`** after field is touched.                         |
+| 75 | **Validation error announcement** (F8)                                                              | **`role="alert"`** on non-empty error text.                             |
+| 76 | **`FormValues` type** (F9)                                                                          | **`Record<string, unknown>`** for `onSubmit$` payload.                  |
+| 77 | **`TextField` change callback** (F11)                                                               | **`onInput$` only** — no `onChange$` in v1.3.                           |
+| **78** | **`InputDecoration` surface** (F4)                                                                | **Type only** — no `<InputDecoration>` component.                         |
+| **79** | **`TextFormField.name`** (F7)                                                                       | **`name: string` required** on `TextFormField`; **`name?: string`** on `TextField`. |
 
 ---
 
-## 34. Roadmap
+## 44. Roadmap
 
 ### Version roadmap summary
 
-Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§21; scrolling §22–§24; `MediaQuery` §25; forms/theming §34.3–§34.5.
+Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§21; scrolling §22–§24; `MediaQuery` §25; **forms §28–§37**; selection controls / theming §44.3–§44.5.
 
 #### v1.0
 
@@ -3791,10 +4418,13 @@ Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§
 
 #### v1.3 — Forms (core)
 
-- `InputDecoration`
-- `TextField`
-- `TextFormField`
-- `Form`
+Fully specified in **§28–§37**. Resolve open questions in **§37** (F1, F2, F3, F5, F10) before implementation.
+
+- `InputDecoration` (type only, §28) — not a widget
+- `TextField` (§29)
+- `TextFormField` (§30)
+- `Form` (§31)
+- Enums: `InputType`, `AutovalidateMode`, `InputMode` (§1.29–§1.31)
 
 #### v1.4 — Selection controls
 
@@ -3811,8 +4441,8 @@ Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§
 #### Future (v2+)
 
 - `ThemeProvider`, `ThemeData`, `ColorScheme`, `TextTheme`
-- `SafeArea`, `ScrollController`, `PageView`, `CustomScrollView`, `SliverList`, `SliverGrid`, `Scrollbar` — §34
-- `Responsive<T>` — §34
+- `SafeArea`, `ScrollController`, `PageView`, `CustomScrollView`, `SliverList`, `SliverGrid`, `Scrollbar` — §44
+- `Responsive<T>` — §44
 - Plus: `Link`, `IconButton`, animation primitives
 
 ---
@@ -3862,7 +4492,7 @@ Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§
 
 **Implementation sequence (v1.1 — next):**
 
-1. Resolve open questions in §30.
+1. Resolve open questions in §40.
 2. Extend `src/lib/_shared/enums.ts` with §1.21–§1.23.
 3. Extend `src/lib/_shared/types.ts` with `ButtonTag`, `InteractiveProps`; export `ContainerTag` from §2 centrally.
 4. Implement layout batch: `Align`, `AspectRatio`.
@@ -3882,11 +4512,11 @@ Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§
 
 ### Scrolling widgets (v1.2)
 
-Fully specified in **§22–§24**. Resolve open questions in **§26** before implementation.
+Fully specified in **§22–§24**. Resolve open questions in **§39** before implementation.
 
 **Implementation sequence (v1.2 — after v1.1):**
 
-1. Resolve open questions in §29.
+1. Resolve open questions in §39.
 2. Implement `SingleChildScrollView`, `ListView`, `GridView` (§22–§24).
 3. Implement `ButtonSize` on `Button` (§1.26).
 4. Update `src/index.ts` and playground scroll demos.
@@ -3947,35 +4577,32 @@ Fully specified in **§25–§27**. Resolve open questions in **§27** before im
 
 ### Forms (v1.3–v1.5)
 
-Roadmap-level only — **no frozen prop tables**. Full design after v1.2 scrolling and v1.25 `MediaQuery` direction are settled. Widget list: **§34 version roadmap summary** (v1.3–v1.5).
+**v1.3 (specified):** §28–§37 — `InputDecoration` (type), `TextField`, `TextFormField`, `Form`. Implementation gated on §37 (F1, F2, F3, F5, F10).
 
-| Widget | Purpose | Proposed API direction | Flutter equivalent |
-| ------ | ------- | ---------------------- | ------------------ |
-| `Form` | Groups fields; validation scope | `onSubmit$`, `autovalidateMode?` enum; slotted fields | [`Form`](https://api.flutter.dev/flutter/widgets/Form-class.html) |
-| `TextField` | Single-line / obscure text input | `value`, `onInput$`, `placeholder`, `type`, `disabled`, `maxLength` | [`TextField`](https://api.flutter.dev/flutter/material/TextField-class.html) |
-| `TextFormField` | `TextField` + `Form` integration | Extends field props + `validator$`, `required` | [`TextFormField`](https://api.flutter.dev/flutter/material/TextFormField-class.html) |
-| `Checkbox` | Boolean toggle | `checked`, `onChange$`, `label` slot or `aria-label` | [`Checkbox`](https://api.flutter.dev/flutter/material/Checkbox-class.html) |
-| `Radio` | Exclusive choice in group | `name`, `value`, `checked`, `onChange$` | [`Radio`](https://api.flutter.dev/flutter/material/Radio-class.html) |
-| `Switch` | On/off control | `checked`, `onChange$` | [`Switch`](https://api.flutter.dev/flutter/material/Switch-class.html) |
-| `Dropdown` | Select from options | `value`, `options`, `onChange$` (native `<select>` first) | [`DropdownButton`](https://api.flutter.dev/flutter/material/DropdownButton-class.html) |
+**v1.4 — Selection controls** (roadmap): `Checkbox`, `Radio`, `Switch`, `Dropdown` (native `<select>`).
 
-**Validation considerations (future):**
+**v1.5 — Form theming:** `FormTheme`, `InputDecorationTheme`; optional `AutofillHint` typed helper (additive to `autoComplete?: string`).
 
-- Client-side validators as `validator$` QRLs returning `string | undefined` (error message).
-- `Form`-level submit blocking when any field invalid; `aria-invalid` + `aria-describedby` linking to error `Text`.
-- Server Actions / API errors passed via props, not global store (Principle #5).
+| Widget | Milestone | Notes |
+| ------ | --------- | ----- |
+| `Checkbox` | v1.4 | `boolean` in `FormValues` |
+| `Radio` | v1.4 | |
+| `Switch` | v1.4 | |
+| `Dropdown` | v1.4 | Native `<select>` |
+| `InputDecorationTheme` | v1.5 | Needs `ThemeProvider` |
+| `FormTheme` | v1.5 | |
+| `FocusNode` | v2 | |
+| `TextEditingController` | v2 | Signals preferred |
+| `AutofillHint` enum | v1.5+ | Decision #73 |
 
-**Accessibility considerations (future):**
+**Implementation sequence (v1.3 — after v1.25):**
 
-- Real `<input>`, `<select>`, `<textarea>`, `<button type="submit">` — not div-based inputs.
-- Labels via slotted `<Text as="label">` + `htmlFor` / `id` pairing convention documented.
-- Keyboard: tab order, Space/Enter on checkbox/radio/switch.
-
-**Future extensibility notes:**
-
-- `FormField<T>` generic wrapper pattern (Flutter parity).
-- Masking, OTP, autocomplete attributes — v2+.
-- Depends on **theming** for consistent focus/error colors (§34.4).
+1. Resolve §37 open questions (or implement approved defaults documented in §37).
+2. Extend `_shared/enums.ts` — `InputType`, `AutovalidateMode`, `InputMode` (§1.29–§1.31).
+3. Extend `_shared/types.ts` — `InputDecoration`, `FormValues`, `FormFieldValidator` (§2, §32).
+4. Implement `src/lib/text-field/`, `text-form-field/`, `form/` (§0.10).
+5. Export from `src/index.ts`; playground login/settings form demo.
+6. `axe` on form screen (§35).
 
 ---
 
@@ -4009,7 +4636,7 @@ Roadmap-level only — informs `ButtonSize`, `Divider` colors, and form focus ri
 ### v2 — Expansion (future)
 
 - **Interactive primitives:** `Link`, `IconButton`, `Tappable` — extends §17 `Button` patterns.
-- **Responsive prop shape:** `Responsive<T>` wrapper — addresses §31.7 and Principle #9.
+- **Responsive prop shape:** `Responsive<T>` wrapper — addresses §41.7 and Principle #9.
 - **Virtualized lists / grids** — builder APIs for `ListView` / `GridView`.
 - **Animation:** `AnimatedContainer`, `AnimatedOpacity`, transition primitives.
 
@@ -4021,11 +4648,12 @@ Roadmap-level only — informs `ButtonSize`, `Divider` colors, and form focus ri
 | **v1.1** | +7 widgets (§15–§21); +5 enums (`BoxFit`, `ButtonVariant`, `ImageLoading`, `ImagePlaceholder`, `ImageError`); `InteractiveProps`; `ButtonSize` doc-only (§1.26). |
 | **v1.2** | Scrolling §22–§24; `ButtonSize` implementation; polish items. |
 | **v1.25** | `MediaQuery` §25–§27; `Orientation`, `Breakpoint` enums (§1.27–§1.28). |
-| **Future** | Forms §34.3, Theming §34.4, virtualization, `Link`, `Responsive<T>`, animation. |
+| **v1.3** | Forms §28–§31; cross-cutting §32–§37; enums §1.29–§1.31. |
+| **Future** | v1.4 selection controls, v1.5 form theming, virtualization, `Link`, `Responsive<T>`, animation. |
 
 ---
 
-## 35. Final implementation checklist
+## 45. Final implementation checklist
 
 Concrete, line-item to-do list. Work top-to-bottom within each phase.
 
@@ -4075,7 +4703,7 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 
 ### Phase 6 — v1.1 basic UI + layout
 
-> **Gate:** §30 v1.1 open questions approved.
+> **Gate:** §40 v1.1 open questions approved.
 
 - [ ] Extend `_shared/enums.ts` — `BoxFit`, `ButtonVariant`, `ImageLoading`, `ImagePlaceholder`, `ImageError` (§1.21–§1.25).
 - [ ] Extend `_shared/types.ts` — `ButtonTag`, `InteractiveProps`; centralize `ContainerTag` export (§2).
@@ -4114,7 +4742,7 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 
 ### Phase 10 — v1.2 scrolling
 
-> **Gate:** §29 v1.2 scrolling open questions resolved.
+> **Gate:** §39 v1.2 scrolling open questions resolved.
 
 - [ ] `src/lib/single-child-scroll-view/` — `SingleChildScrollViewProps` from §22.
 - [ ] `src/lib/list-view/` — `ListViewProps` from §23.
@@ -4133,4 +4761,17 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 - [ ] Export from `src/index.ts`; unit-test enum identity + breakpoint classification + invalid config warning.
 - [ ] Playground: responsive padding, `GridView`, layout switch per §25 Usage.
 
-> Out of scope for Phases 1–10: v1.25 `MediaQuery` (Phase 11), forms/theming (§34.3–§34.5), and v2 expansion.
+### Phase 12 — v1.3 forms
+
+> **Gate:** §37 open questions resolved (F1, F2, F3, F5, F10). Approved decisions #73–#79 may proceed in parallel with doc-only work.
+
+- [ ] Extend `_shared/enums.ts` — `InputType`, `AutovalidateMode`, `InputMode` (§1.29–§1.31).
+- [ ] Extend `_shared/types.ts` — `InputDecoration`, `FormValues`, `FormFieldValidator` (§2, §32).
+- [ ] `src/lib/text-field/` — `TextFieldProps` from §29.
+- [ ] `src/lib/text-form-field/` — `TextFormFieldProps` from §30 (composes `TextField`).
+- [ ] `src/lib/form/` — `FormProps` from §31 (Qwik context, `useId()` per §36).
+- [ ] Export from `src/index.ts` (§0.10).
+- [ ] Playground login/settings form demo.
+- [ ] `axe` on form screen (§35).
+
+> Out of scope for Phases 1–11: v1.3 forms (Phase 12), v1.4–v1.5 selection/theming, and v2 expansion.
