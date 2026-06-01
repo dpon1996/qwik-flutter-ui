@@ -262,3 +262,19 @@ export const ImageError = {
   text: "text",
 } as const;
 export type ImageError = (typeof ImageError)[keyof typeof ImageError];
+
+/* §1.27 — `Orientation` (MediaQuery, v1.25) */
+export const Orientation = {
+  portrait: "portrait",
+  landscape: "landscape",
+} as const;
+export type Orientation =
+  (typeof Orientation)[keyof typeof Orientation];
+
+/* §1.28 — `Breakpoint` (shared responsive tier, v1.25) */
+export const Breakpoint = {
+  mobile: "mobile",
+  tablet: "tablet",
+  desktop: "desktop",
+} as const;
+export type Breakpoint = (typeof Breakpoint)[keyof typeof Breakpoint];

@@ -32,3 +32,4 @@ export * from "./lib/button";
 export * from "./lib/single-child-scroll-view";
 export * from "./lib/list-view";
 export * from "./lib/grid-view";
+export * from "./lib/media-query";
