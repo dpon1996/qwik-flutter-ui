@@ -1,6 +1,6 @@
 # qwik-flutter-ui — Public API Design
 
-> **Status:** v1 layout + typography finalized. **v1.1** (§15–§21) specified — v1.1 open questions approved (§27). **v1.2** scrolling (§22–§24) specified — resolve open questions in §26 before implementation. **v1.25** `MediaQuery` and **v1.3–v1.5** forms/theming remain roadmap-level (§31).
+> **Status:** v1 layout + typography finalized. **v1.1** (§15–§21) specified — v1.1 open questions approved (§30). **v1.2** scrolling (§22–§24) specified — resolve open questions in §29 before implementation. **v1.25** `MediaQuery` specified (§25) — resolve open questions in §27 before implementation. **v1.3–v1.5** forms/theming remain roadmap-level (§34).
 > **Goal:** A Flutter-inspired UI framework for Qwik. The API should feel as close to Flutter as possible while remaining idiomatic JSX.
 
 ---
@@ -49,14 +49,17 @@ Every API decision in this document is justified against these ten principles. W
 - §22 — `SingleChildScrollView`
 - §23 — `ListView`
 - §24 — `GridView`
-- §25 — v1.2 scrolling — shared enums review
-- §26 — v1.2 Scrolling open questions
-- §27 — Open questions (v1.1, approval required)
-- §28 — API consistency review
-- §29 — Summary table
-- §30 — Decisions log
-- §31 — Roadmap (incl. version summary, scrolling, forms, theming)
-- §32 — Final implementation checklist
+- §25 — `MediaQuery`
+- §26 — v1.25 — shared enums review
+- §27 — v1.25 MediaQuery open questions
+- §28 — v1.2 scrolling — shared enums review
+- §29 — v1.2 Scrolling open questions
+- §30 — Open questions (v1.1, approval required)
+- §31 — API consistency review
+- §32 — Summary table
+- §33 — Decisions log
+- §34 — Roadmap (incl. version summary, scrolling, forms, theming)
+- §35 — Final implementation checklist
 
 ---
 
@@ -132,7 +135,7 @@ We do **not** spread `...rest` onto the DOM beyond the above; arbitrary unknown 
 
 ### 0.7 Interactive widgets (v1.1+)
 
-Layout widgets (§3–§14) stay **non-interactive** — no `onClick$` (see §28.6). **`Button`** (§17) is the first widget that accepts Qwik event handlers.
+Layout widgets (§3–§14) stay **non-interactive** — no `onClick$` (see §31.6). **`Button`** (§17) is the first widget that accepts Qwik event handlers.
 
 Conventions for all interactive widgets:
 
@@ -222,7 +225,11 @@ src/
     ├── aspect-ratio/
     ├── single-child-scroll-view/
     ├── list-view/
-    └── grid-view/
+    ├── grid-view/
+    └── media-query/
+        ├── media-query.tsx
+        ├── types.ts
+        └── index.ts
 ```
 
 Package entry (`src/index.ts`) re-exports:
@@ -251,6 +258,7 @@ export { AspectRatio } from "./lib/aspect-ratio";
 export { SingleChildScrollView } from "./lib/single-child-scroll-view";
 export { ListView } from "./lib/list-view";
 export { GridView } from "./lib/grid-view";
+export { MediaQuery, useMediaQuery } from "./lib/media-query";
 
 // Prop types
 export type { RowProps } from "./lib/row";
@@ -589,8 +597,8 @@ export const BoxFit = {
 | `fill`        | `fill`           | Stretch to fill; may distort aspect ratio.                            |
 | `contain`     | `contain`        | Letterbox inside bounds.                                              |
 | `cover`       | `cover`          | Crop to fill bounds.                                                  |
-| `fitWidth`    | `none` + sizing  | Scale down so width fits; height may clip. **Deferred in v1.1 impl (§27.5).** |
-| `fitHeight`   | `none` + sizing  | Scale down so height fits; width may clip. **Deferred in v1.1 impl (§27.5).** |
+| `fitWidth`    | `none` + sizing  | Scale down so width fits; height may clip. **Deferred in v1.1 impl (§30.5).** |
+| `fitHeight`   | `none` + sizing  | Scale down so height fits; width may clip. **Deferred in v1.1 impl (§30.5).** |
 | `none`        | `none`           | Intrinsic size; may overflow.                                         |
 | `scaleDown`   | `scale-down`     | Like `contain` but never upscale. **Default for `Image`.**            |
 
@@ -688,6 +696,44 @@ export const ButtonSize = {
 | `small`  | Dense toolbars, tables, inline actions.           |
 | `medium` | Default app density (matches v1.1 hard-coded pad). |
 | `large`  | Primary CTAs, touch-first layouts.                |
+
+### 1.27 `Orientation` — `MediaQuery` (v1.25)
+
+Viewport aspect classification. Flutter [`Orientation`](https://api.flutter.dev/flutter/widgets/Orientation.html).
+
+```ts
+export const Orientation = {
+  portrait:  "portrait",
+  landscape: "landscape",
+} as const;
+```
+
+**Used by:** `MediaQueryData.orientation` (§25).
+
+**Not** layout scroll direction — use `Axis` (§1.4) for `Row`, `Column`, `ListView`, `GridView`, `Divider`, `Wrap`.
+
+**Derivation:** `width >= height` → `Orientation.landscape`; else `Orientation.portrait`. Square viewport → `portrait` (§27 M8).
+
+### 1.28 `Breakpoint` — shared responsive tier (v1.25)
+
+Framework-wide viewport tier enum. **Not** scoped to `MediaQuery` — lives in `src/lib/_shared/enums.ts` (§0.10) alongside `Axis`, `Alignment`, `Orientation`.
+
+```ts
+export const Breakpoint = {
+  mobile:  "mobile",
+  tablet:  "tablet",
+  desktop: "desktop",
+} as const;
+```
+
+| Consumer | Usage |
+| -------- | ----- |
+| `MediaQuery` / `useMediaQuery()` | `MediaQueryData.breakpoint`; derived `isMobile` / `isTablet` / `isDesktop` |
+| `Responsive<T>` (v2+, §31.7) | `Partial<Record<Breakpoint, T>>` or alias map |
+| `ThemeData` (v1.5+, §34.4) | Per-tier design tokens |
+| Responsive widget props (v2+) | e.g. `padding?: Responsive<EdgeInsets>` |
+
+**Not in v1.25:** `xs`–`xl` enum members — reserved for `Responsive<T>` string keys (§31.7). Additive enum members (e.g. `largeDesktop`) may ship in a future semver minor.
 
 ---
 
@@ -1640,7 +1686,7 @@ export interface CardProps extends BaseProps {
 | ----------------- | --------- | ---------------------------------------------------------------------------------------- |
 | `as`              | `"div"`   | Reuses `ContainerTag` (§2). Use `"article"` for feed/list cards.                          |
 | `elevation`       | `1`       | Maps to layered `box-shadow` presets (0 = flat). Ignored when `boxShadow` is set.        |
-| `margin`          | —         | `EdgeInsets` (§0.3). Flutter default margin is `4` — **not** applied by default (§27.1). |
+| `margin`          | —         | `EdgeInsets` (§0.3). Flutter default margin is `4` — **not** applied by default (§30.1). |
 | `padding`         | —         | `EdgeInsets`.                                                                            |
 | `backgroundColor` | —         | CSS color string.                                                                        |
 | `borderRadius`    | —         | Same shape as `Container` (§5).                                                          |
@@ -1849,7 +1895,7 @@ export interface ButtonProps extends BaseProps, InteractiveProps {
   /** Only when `as="button"`. Default `"button"` (prevents accidental form submit). */
   type?: "button" | "submit" | "reset";
 
-  /** When set, renders navigation (see §27.2). */
+  /** When set, renders navigation (see §30.2). */
   href?: string;
   target?: string;
   rel?: string;
@@ -1871,7 +1917,7 @@ export interface ButtonProps extends BaseProps, InteractiveProps {
 | `borderRadius`    | variant default         |                                                               |
 | `border`          | variant default         | Most relevant for `outlined`.                                 |
 | `elevation`       | `1`                     | Only for `elevated` variant.                                  |
-| `href`            | —                       | Link navigation; see open questions §27.2.                    |
+| `href`            | —                       | Link navigation; see open questions §30.2.                    |
 | _base props_      | —                       | `aria-label` required for icon-only buttons (documented).     |
 
 > Label content is **slotted** (`<Button>Save</Button>`). Icon-only buttons are v1.1 without a dedicated `Icon` widget — use slotted markup + `aria-label`.
@@ -1934,7 +1980,7 @@ TextButton(
 - **`onPressed` → `onClick$`** — Qwik idiom, not Flutter name (Principle #5: Qwik resumability first).
 - **`styleFrom` / `ButtonStyle`** not exposed — flat decoration props only (same philosophy as `Container`).
 - **`autofocus`**, **`clipBehavior`**, **`isSemanticButton`** — deferred.
-- Layout widgets remain non-interactive (§28.6); `Button` is the pattern for future `Link`, `IconButton`.
+- Layout widgets remain non-interactive (§31.6); `Button` is the pattern for future `Link`, `IconButton`.
 
 ### Future extensibility
 
@@ -1943,7 +1989,7 @@ TextButton(
 v1.1 ships a single density per `ButtonVariant` (padding, font size, min-height baked into CSS module presets). **`ButtonSize` is intentionally omitted from v1.1** because:
 
 1. **Surface area** — three sizes × four variants = twelve combinations to design, test, and keep accessible (touch targets, contrast).
-2. **No theme system yet** — sizes are really design tokens; without `ThemeData` (§31 theming), every size would be hard-coded duplication.
+2. **No theme system yet** — sizes are really design tokens; without `ThemeData` (§34 theming), every size would be hard-coded duplication.
 3. **Escape hatch exists** — callers can override `padding`, `fontSize` on slotted `Text`, or `class` / `style` until `size` lands.
 4. **Flutter parity timing** — Material 3 uses `ButtonStyle` + theme; we ship variants first, then density.
 
@@ -1960,7 +2006,7 @@ size?: ButtonSize;   // default ButtonSize.medium
 | `medium`     | ~40px              | 16px                       |
 | `large`      | ~48px              | 24px                       |
 
-Exact values will align with `ThemeData` once theming lands (§31).
+Exact values will align with `ThemeData` once theming lands (§34).
 
 #### Other planned additions
 
@@ -2157,7 +2203,7 @@ Image.network(
 
 - **`Image.asset` / bundled assets** — caller resolves paths (`/assets/…`); no build-time asset pipeline in v1.1.
 - **`loading` vs `placeholder`:** `loading` is the native `loading` attribute (`ImageLoading`); `placeholder` is the enum preset layer until `load`.
-- **`BoxFit.fitWidth` / `fitHeight`** — enum members exist; full CSS mapping deferred in implementation (§27.5). Use `contain` / `cover` until then.
+- **`BoxFit.fitWidth` / `fitHeight`** — enum members exist; full CSS mapping deferred in implementation (§30.5). Use `contain` / `cover` until then.
 - **`semanticLabel`** → `alt`; **`excludeFromSemantics`** → `decorative`.
 - **`color` / `colorBlendMode`** (Flutter tint) — deferred; use `filter` via `style` until v2.
 - **`gaplessPlayback`**, **`filterQuality`**, **`repeat`** — not applicable or deferred.
@@ -2251,7 +2297,7 @@ Visibility(
 ### Notes
 
 - **`replacement` widget** (Flutter) — deferred; use JSX conditional for alternate UI in v1.1.
-- **`maintainState`**, **`maintainAnimation`**, **`maintainInteractivity`** — largely N/A on web/Qwik SSR; see §31.4.
+- **`maintainState`**, **`maintainAnimation`**, **`maintainInteractivity`** — largely N/A on web/Qwik SSR; see §34.4.
 - **`Offstage`** analogue — `maintainSize={true}` + `visible={false}`.
 
 ### Future extensibility
@@ -2433,7 +2479,7 @@ AspectRatio(
 
 - **Width** comes from the parent constraint; **height** is computed from `aspectRatio` (Flutter parity). If parent has no width, ratio box may collapse — pair with `width="100%"` on parent flex child or `Container`.
 - Pairs naturally with **`Image`** (§18) and **`Stack`** overlays.
-- Invalid `aspectRatio <= 0` — TypeScript should document; runtime: treat as `1` or dev-only warning (implementation choice, §27.7).
+- Invalid `aspectRatio <= 0` — TypeScript should document; runtime: treat as `1` or dev-only warning (implementation choice, §30.7).
 
 ### Future extensibility
 
@@ -2469,7 +2515,7 @@ export interface SingleChildScrollViewProps extends BaseProps {
 | Prop           | Default           | Notes                                                                 |
 | -------------- | ----------------- | --------------------------------------------------------------------- |
 | `axis`         | `Axis.vertical`   | Vertical: `overflow-y: auto`, `overflow-x: hidden`; swap when horizontal. |
-| `reverse`      | `false`           | Inner flex `column-reverse` / `row-reverse` (see §26 S4).             |
+| `reverse`      | `false`           | Inner flex `column-reverse` / `row-reverse` (see §29 S4).             |
 | `padding`      | —                 | `EdgeInsets` on scrollport (Flutter `padding`).                       |
 | `clipBehavior` | `Clip.hardEdge`   | Maps to `overflow` on scrollport.                                     |
 | _base props_   | —                 | See §0.6.                                                             |
@@ -2543,18 +2589,18 @@ qwik-flutter-ui uses `axis={Axis.vertical}` (JSX).
 - Avoids duplicate terminology (`scrollDirection` is an `Axis` in Flutter — not a separate type).
 - Keeps the public API surface smaller (no `ScrollDirection` enum, no `scrollDirection` alias prop).
 
-**We do not ship** a `scrollDirection` prop or `ScrollDirection` enum in v1.2. See §28.11 and §26 S2.
+**We do not ship** a `scrollDirection` prop or `ScrollDirection` enum in v1.2. See §31.11 and §29 S2.
 
-- **Scrollbars:** system/UA only in v1.2; custom `Scrollbar` → §31 future scrolling.
+- **Scrollbars:** system/UA only in v1.2; custom `Scrollbar` → §34 future scrolling.
 - **SSR:** outer `<div>` scrollport + inner wrapper; `overflow: auto`; no scroll listeners (Principles #4–#7).
-- **Nested scroll:** caller responsibility; document in §26 S3.
+- **Nested scroll:** caller responsibility; document in §29 S3.
 - **Flex parent:** child scroll views inside `Column`/`Row` often need parent `min-height: 0` or bounded height (§9 `Expanded`).
 
 ### Future extensibility
 
 | Version | Addition                                                                 |
 | ------- | ------------------------------------------------------------------------ |
-| v2      | `ScrollController`, `physics`, `primary`, `keyboardDismissBehavior` — §31 |
+| v2      | `ScrollController`, `physics`, `primary`, `keyboardDismissBehavior` — §34 |
 | v2      | Custom `Scrollbar` widget                                                |
 
 ---
@@ -2565,7 +2611,7 @@ A scrollable list of slotted children. Flutter's [`ListView`](https://api.flutte
 
 ### Purpose
 
-Scroll many sibling items (cards, settings rows, feeds) in one scrollport. v1.2 is **non-virtualized** (all children in the DOM) — suitable for moderate lists. For very long lists, defer to v2 builder/sliver APIs (§31).
+Scroll many sibling items (cards, settings rows, feeds) in one scrollport. v1.2 is **non-virtualized** (all children in the DOM) — suitable for moderate lists. For very long lists, defer to v2 builder/sliver APIs (§34).
 
 ### Props
 
@@ -2576,7 +2622,7 @@ export interface ListViewProps extends BaseProps {
   padding?: EdgeInsets;
   /**
    * Main-axis gap between slotted children. Default `0`.
-   * Extension over Flutter (see §26 L5) — same idea as `Row.gap` / `Column.gap`.
+   * Extension over Flutter (see §29 L5) — same idea as `Row.gap` / `Column.gap`.
    */
   gap?: Length;
   /**
@@ -2650,7 +2696,7 @@ ListView(
 
 ### Accessibility considerations
 
-**Default behavior:** Do **not** automatically apply `role="list"` or `role="listitem"` (§26 L1).
+**Default behavior:** Do **not** automatically apply `role="list"` or `role="listitem"` (§29 L1).
 
 - Flutter `ListView` does not imply semantic list behavior; content is often cards, forms, or dashboards.
 - Consumers opt in via `role` on `BaseProps` when markup is a true list.
@@ -2662,7 +2708,7 @@ ListView(
 
 #### v1.2 vs deferred
 
-| v1.2 ships                         | Deferred (v2 — §31)                                      |
+| v1.2 ships                         | Deferred (v2 — §34)                                      |
 | ---------------------------------- | -------------------------------------------------------- |
 | Slotted children                   | `itemCount` + `itemBuilder$`                             |
 | `gap`, `padding`, `axis`, `reverse`| `separatorBuilder$`                                      |
@@ -2671,7 +2717,7 @@ ListView(
 
 **Separators (v1.2):** Use `gap`, or insert `<Divider />` between mapped items — no `separatorBuilder$`.
 
-**`gap` (Flutter extension):** Flutter has no `gap` on `ListView`; spacing uses explicit widgets or `ListView.separated`. Documented in §26 L5 (same category as `Row.gap` in v1).
+**`gap` (Flutter extension):** Flutter has no `gap` on `ListView`; spacing uses explicit widgets or `ListView.separated`. Documented in §29 L5 (same category as `Row.gap` in v1).
 
 **`shrinkWrap`:** When `false` (default), scrollport fills parent (`flex: 1` + `min-height: 0` in flex layouts). When `true`, sizes to content; parent must provide max height/width.
 
@@ -2684,7 +2730,7 @@ ListView(
 | **Flutter equivalent** | [`ScrollView.cacheExtent`](https://api.flutter.dev/flutter/widgets/ScrollView/cacheExtent.html) |
 | **Purpose** | Overscan buffer for lazy lists |
 | **Why deferred** | Meaningless until `itemBuilder$` + viewport culling (v2) |
-| **Milestone** | **v2** — §31 Future ListView enhancements |
+| **Milestone** | **v2** — §34 Future ListView enhancements |
 
 Do **not** add `cacheExtent` to v1.2 `ListViewProps`.
 
@@ -2703,14 +2749,14 @@ qwik-flutter-ui uses `axis={Axis.vertical}` (JSX).
 - Consistent across scrolling widgets and future scrolling widgets.
 - Avoids duplicate terminology and keeps the API surface smaller.
 
-**We do not ship** a `scrollDirection` prop or `ScrollDirection` enum in v1.2. See §28.11 and §26 S2.
+**We do not ship** a `scrollDirection` prop or `ScrollDirection` enum in v1.2. See §31.11 and §29 S2.
 
 ### Future extensibility
 
 | Version | Addition                                                        |
 | ------- | --------------------------------------------------------------- |
 | v2      | `itemBuilder$`, `itemCount`, `separatorBuilder$`, `cacheExtent` |
-| v2      | `ScrollController`, virtualization — §31                        |
+| v2      | `ScrollController`, virtualization — §34                        |
 
 ---
 
@@ -2810,7 +2856,7 @@ GridView.count(
 
 ### Notes
 
-**Spacing (G3):** `gap` + `mainAxisSpacing` — not `runSpacing`. `mainAxisSpacing` matches `SliverGridDelegate`; `gap` is the `crossAxisSpacing` analogue (§26 G3).
+**Spacing (G3):** `gap` + `mainAxisSpacing` — not `runSpacing`. `mainAxisSpacing` matches `SliverGridDelegate`; `gap` is the `crossAxisSpacing` analogue (§29 G3).
 
 **CSS mapping** *(default `axis={Axis.vertical}`)*:
 
@@ -2839,21 +2885,420 @@ qwik-flutter-ui uses `axis={Axis.vertical}` (JSX).
 - Consistent across scrolling widgets and future scrolling widgets.
 - Avoids duplicate terminology and keeps the API surface smaller.
 
-**We do not ship** a `scrollDirection` prop or `ScrollDirection` enum in v1.2. See §28.11 and §26 S2.
+**We do not ship** a `scrollDirection` prop or `ScrollDirection` enum in v1.2. See §31.11 and §29 S2.
 
 - **SSR:** CSS grid + overflow scrollport only; no measurement JS.
-- **`columns` + `minItemWidth`:** both ship in v1.2; `columns` takes precedence (§26 G4).
+- **`columns` + `minItemWidth`:** both ship in v1.2; `columns` takes precedence (§29 G4).
 
 ### Future extensibility
 
 | Version | Addition                                      |
 | ------- | --------------------------------------------- |
-| v2      | `SliverGrid`, builder delegates — §31         |
+| v2      | `SliverGrid`, builder delegates — §34         |
 | v2      | `ScrollController`                            |
 
 ---
 
-## 25. v1.2 scrolling — shared enums review
+## 25. `MediaQuery`
+
+Expose viewport metrics and breakpoint classification to the component tree. Flutter's [`MediaQuery`](https://api.flutter.dev/flutter/widgets/MediaQuery-class.html) / [`MediaQueryData`](https://api.flutter.dev/flutter/widgets/MediaQueryData-class.html).
+
+### Purpose
+
+Flutter developers routinely call `MediaQuery.of(context)` for layout width, orientation, padding, and (in Material apps) breakpoint-style branching. qwik-flutter-ui v1.25 adds the same **mental model** in a Qwik-idiomatic form.
+
+**Why v1.25:**
+
+- Responsive padding, columns, and layout switches (`Row` vs `Column`) without ad-hoc `window` access in every component.
+- Foundation for responsive **`GridView`** (§24) — `columns` vs `minItemWidth` from `useMediaQuery()`.
+- Prerequisite for **forms** (v1.3+) — keyboard `viewInsets` deferred, but viewport tier is needed for field density.
+- Prerequisite for **`Responsive<T>`** (v2+, §31.7) and **`ThemeData`** per-tier tokens (v1.5+).
+
+**Principles:**
+
+- **#5 — Qwik resumability:** metrics live in Qwik **context** from a root `<MediaQuery>` provider; no global module store.
+- **#9 — Responsive design:** CSS `Length` strings (`"50%"`, `clamp(...)`) remain valid without `MediaQuery`. This widget adds **programmatic** branching when JSX needs it.
+
+**Not a layout widget:** does not render flex/grid chrome; does not replace CSS fluid layouts.
+
+### Public API
+
+Three patterns were evaluated:
+
+| Approach | Verdict | Reason |
+| -------- | ------- | ------ |
+| `useMediaQuery()` | **Primary** | Idiomatic Qwik inside `component$`; reads ancestor context |
+| `<MediaQuery>` provider | **Ship** | Flutter parity (ancestor supplies data); root layout; `initialData` for SSR |
+| `MediaQuery.of()` | **Do not ship** | No `BuildContext` in Qwik; document as intentional deviation |
+
+**Frozen surface:**
+
+```ts
+// src/lib/media-query/types.ts (re-exports Breakpoint, Orientation from _shared)
+export interface MediaQueryData {
+  /** Viewport width in CSS pixels (layout viewport). */
+  width: number;
+  /** Viewport height in CSS pixels. */
+  height: number;
+  /** Viewport aspect classification — not layout `Axis` (§1.27). */
+  orientation: Orientation;
+  /** Active viewport tier. Authoritative (§27 M10). */
+  breakpoint: Breakpoint;
+  /** Derived from `breakpoint`; exactly one is `true`. */
+  isMobile: boolean;
+  isTablet: boolean;
+  isDesktop: boolean;
+}
+
+export interface MediaQueryBreakpoints {
+  /** Max width (px) for `Breakpoint.mobile`. Default `599` (§27 M2). */
+  mobileMax: number;
+  /** Max width (px) for `Breakpoint.tablet`. Default `1023`. Must be `> mobileMax` (§27 M11). */
+  tabletMax: number;
+  // `Breakpoint.desktop`: width > tabletMax
+}
+
+export interface MediaQueryProps extends BaseProps {
+  /** SSR / first-paint when `window` is unavailable. */
+  initialData?: Partial<MediaQueryData>;
+  /** Override default tier thresholds (px). Invalid → §27 M11. */
+  breakpoints?: Partial<MediaQueryBreakpoints>;
+}
+
+/** Reads nearest `<MediaQuery>` context; falls back to defaults outside provider (§27 M6). */
+export function useMediaQuery(): MediaQueryData;
+```
+
+**`<MediaQuery>` component:**
+
+- Establishes Qwik context (`createContextId<MediaQueryData>`).
+- Default: **passthrough** — slotted children only; no extra layout DOM when context can attach without a wrapper (§27 M4).
+- No render-prop API in v1.25 — use `useMediaQuery()` as the `MediaQuery.of(context)` analogue.
+
+**Folder:** `src/lib/media-query/` per §0.10; export `Breakpoint` and `Orientation` from package root via `_shared` (not from `media-query/` only).
+
+### Props (`MediaQuery`)
+
+| Prop           | Default | Notes |
+| -------------- | ------- | ----- |
+| `initialData`  | —       | Partial `MediaQueryData` for SSR / first paint. Prefer `breakpoint: Breakpoint.mobile` over boolean-only flags. |
+| `breakpoints`  | —       | Partial thresholds; merged with library defaults then validated (§27 M11). |
+| _base props_   | —       | See §0.6. |
+
+### `MediaQueryData` fields
+
+| Field | v1.25 | Notes |
+| ----- | ----- | ----- |
+| `width`, `height` | Ship | Viewport size in px (§27 M3) |
+| `orientation` | Ship | `Orientation` enum (§1.27) |
+| `breakpoint` | Ship | `Breakpoint` enum (§1.28) — **authoritative** tier |
+| `isMobile`, `isTablet`, `isDesktop` | Ship | **Derived** from `breakpoint`; mutually exclusive (§27 M10-C) |
+| `devicePixelRatio` | Defer | v2+ |
+| `textScaleFactor` | Defer | Forms / a11y milestone |
+| `platformBrightness` | Defer | Theming §34.4 |
+| `viewInsets` | Defer | Forms v1.3+; `VisualViewport` |
+| `padding` / `viewPadding` | Defer | **`SafeArea` v2** (§34) |
+
+**Invariant (M10-C):** `isMobile === (breakpoint === Breakpoint.mobile)` (and likewise for tablet/desktop). Exactly one boolean is `true`.
+
+**`initialData` normalization:** If `breakpoint` and booleans conflict, **`breakpoint` wins**; recompute booleans; dev warning in development. Documentation examples use `breakpoint: Breakpoint.mobile`, not `isMobile: true` alone.
+
+**Classification:** Compare `width` to merged thresholds → one `Breakpoint` → derive booleans. Three tiers only on `MediaQueryData` (`mobile` / `tablet` / `desktop`). Finer `xs`–`xl` keys reserved for **`Responsive<T>`** v2+ (§31.7).
+
+### Usage
+
+**Root layout (SSR-friendly):**
+
+```tsx
+// routes/layout.tsx
+<MediaQuery
+  initialData={{
+    width: 360,
+    height: 640,
+    orientation: Orientation.portrait,
+    breakpoint: Breakpoint.mobile,
+  }}
+>
+  <Slot />
+</MediaQuery>
+```
+
+**Responsive padding:**
+
+```tsx
+export default component$(() => {
+  const media = useMediaQuery();
+  return (
+    <Container padding={media.isMobile ? 8 : 24}>
+      <Column gap={12}>
+        <Text as="h1">Settings</Text>
+      </Column>
+    </Container>
+  );
+});
+```
+
+**Responsive `GridView`:**
+
+```tsx
+const media = useMediaQuery();
+
+return media.isMobile ? (
+  <GridView columns={2} gap={12} mainAxisSpacing={12} childAspectRatio={1}>
+    {tiles.map((t) => (
+      <Image key={t.id} src={t.src} alt={t.label} width="100%" height="100%" fit={BoxFit.cover} />
+    ))}
+  </GridView>
+) : (
+  <GridView minItemWidth={160} gap={16} mainAxisSpacing={16}>
+    {tiles.map((t) => (
+      <Card key={t.id} padding={12}>
+        <Text>{t.label}</Text>
+      </Card>
+    ))}
+  </GridView>
+);
+```
+
+**Responsive layout switch:**
+
+```tsx
+const media = useMediaQuery();
+
+return media.isDesktop ? (
+  <Row gap={24}>
+    <Sidebar />
+    <MainContent />
+  </Row>
+) : (
+  <Column gap={16}>
+    <MainContent />
+  </Column>
+);
+```
+
+**Responsive text scaling** (prefer `rem` in production; shown for Flutter parity):
+
+```tsx
+const media = useMediaQuery();
+const fontSize = media.isMobile ? 14 : media.isTablet ? 16 : 18;
+
+return <Text style={{ fontSize }}>Body copy</Text>;
+```
+
+### Flutter equivalent
+
+```dart
+final media = MediaQuery.of(context);
+final width = media.size.width;
+final orientation = media.orientation;
+
+padding: EdgeInsets.all(width < 600 ? 8 : 24),
+```
+
+```dart
+// Breakpoint-style branching (Flutter has no isMobile on MediaQueryData)
+LayoutBuilder(
+  builder: (context, constraints) {
+    if (constraints.maxWidth < 600) { /* mobile */ }
+    ...
+  },
+)
+```
+
+### Accessibility considerations
+
+- **No semantic impact** — provider does not set `role`, `aria-live`, or landmarks.
+- **Do not remove content from the DOM** based on `isMobile` alone — use CSS or `Visibility` with care; keyboard and screen-reader users may need access on all tiers.
+- **Text scaling:** defer `textScaleFactor`; prefer `rem` / user agent scaling over hard-coded px from `MediaQuery` (anti-pattern for a11y).
+
+### Notes
+
+#### SSR and resumability
+
+1. **SSR / prerender:** No `window` → `initialData` on `<MediaQuery>` if provided, else documented defaults (§27 M1): e.g. `width: 360`, `height: 640`, `orientation: Orientation.portrait`, `breakpoint: Breakpoint.mobile`.
+2. **Hydration / resume:** Reattach viewport listeners; serialize last known `MediaQueryData` from provider when possible (Principle #5).
+3. **Client updates:** `useVisibleTask$` (or guarded `useTask$`) — `resize` and/or `matchMedia` `change` (§27 M5); **no module-level listeners**.
+
+**FOUC / layout shift:** branching layout may change after hydration — mitigate with CSS-first responsive (`GridView.minItemWidth`, `%`, `clamp`) and server hints (`initialData`, optional CDN viewport headers) as caller responsibility.
+
+**Viewport only** — no `ResizeObserver` on arbitrary elements in v1.25 (aligns with §24 CSS-only grid).
+
+#### Invalid `breakpoints` config (M11)
+
+Example: `breakpoints={{ mobileMax: 1024, tabletMax: 768 }}`.
+
+1. Merge partial config with defaults; validate finite numbers, `tabletMax > mobileMax`, `>= 0`.
+2. **Invalid:** production uses **library default thresholds**; development emits `console.warn('[MediaQuery] Invalid breakpoints config; using defaults.', …)`.
+3. Do **not** throw (SSR-safe). Do **not** silently clamp overrides without warning (reject M11-B).
+
+#### Flutter parity — `useMediaQuery()` vs `MediaQuery.of(context)`
+
+| Flutter | qwik-flutter-ui | Keep? |
+| ------- | --------------- | ----- |
+| `MediaQuery.of(context)` | `useMediaQuery()` | Yes — Qwik idiom |
+| `MediaQueryData.size` | flat `width` / `height` | Yes — document mapping |
+| `isMobile` / `isTablet` / `isDesktop` | derived convenience | Yes — **extension**, not on Flutter `MediaQueryData` |
+| `breakpoint` | authoritative tier | Yes — library explicit model |
+| `padding` / `viewInsets` | deferred | Yes — SafeArea / forms |
+
+#### Relationship to `SafeArea` (v2)
+
+Flutter `SafeArea` reads `MediaQuery.padding` / `viewPadding`. v1.25 does **not** ship inset fields. Interim: `Container` + `padding: env(safe-area-inset-*)`. Ship **`SafeArea`** after v1.25 (§34).
+
+#### Relationship to `Responsive<T>` (v2+)
+
+v1.25: imperative `useMediaQuery()`. v2+: declarative props, e.g. `width?: Responsive<Length>` keyed by shared **`Breakpoint`** (§31.7). `xs`–`xl` optional on `Responsive<T>` only — not on `MediaQueryData`.
+
+#### Relationship to `ThemeData` (v1.5+)
+
+Per-`Breakpoint` design tokens (e.g. denser `Button` on `Breakpoint.mobile`). **`Breakpoint`** in `_shared` so theming does not depend on `media-query/`.
+
+### Deferred APIs
+
+| Flutter field | Milestone | Reason |
+| ------------- | --------- | ------ |
+| `devicePixelRatio` | v2+ | Low layout impact |
+| `textScaleFactor` | Forms / a11y | Measurement + semantics |
+| `platformBrightness` | v1.5+ theming | `prefers-color-scheme` |
+| `viewInsets` | v1.3+ forms | Keyboard / `VisualViewport` |
+| `padding` / `viewPadding` | v2 `SafeArea` | `env(safe-area-inset-*)` interim |
+
+### Future extensibility
+
+| Version | Addition |
+| ------- | -------- |
+| v1.3+ | `viewInsets` for keyboard-aware forms |
+| v1.5+ | `platformBrightness` + theming |
+| v2 | `SafeArea`, `Responsive<T>`, optional `devicePixelRatio` |
+
+---
+
+## 26. v1.25 — shared enums review
+
+Candidates for v1.25. **Exactly two** new §1 entries — no others.
+
+| Candidate | Verdict | Reason |
+| --------- | ------- | ------ |
+| `Orientation` | **Ship** §1.27 | Viewport aspect; distinct from `Axis` (§1.4) |
+| `Breakpoint` | **Ship** §1.28 — **shared enum** | Framework-wide tier; not MediaQuery-scoped |
+| `xs`–`xl` tier enum | **Defer** | `Responsive<T>` v2+ string keys |
+| Reuse `Axis` for orientation | **Reject** | `Axis` = layout/scroll direction |
+| `Breakpoint` only in `media-query/` | **Reject** | Breaks `ThemeData`, `Responsive<T>` imports |
+
+**Ship in v1.25:** `Orientation` (§1.27), `Breakpoint` (§1.28), plus existing shared types. No `ScrollDirection`, `ScrollPhysics`, etc.
+
+---
+
+## 27. v1.25 MediaQuery open questions
+
+Resolve before v1.25 implementation. Record approvals in §33 decisions log.
+
+| ID | Topic | Recommendation |
+| -- | ----- | -------------- |
+| M1 | SSR default `MediaQueryData` without `initialData` | **(A)** Mobile-first defaults (`360×640`, `Breakpoint.mobile`) |
+| M2 | Breakpoint px thresholds | **(A)** `mobileMax: 599`, `tabletMax: 1023` (Material-adjacent) |
+| M3 | Viewport size source | **(A)** `window.innerWidth` / `innerHeight` |
+| M4 | `<MediaQuery>` DOM | **(A)** Passthrough / zero layout DOM when possible |
+| M5 | Resize listener strategy | **(A)** `resize` + `matchMedia` on tier boundaries |
+| M6 | `useMediaQuery()` outside provider | **(A)** SSR defaults + dev warning |
+| M7 | `size` vs flat `width`/`height` | **(A)** Flat only in v1.25 |
+| M8 | Square viewport orientation | **(A)** `Orientation.portrait` tie-break |
+| M9 | `prefers-*` booleans in v1.25 | **(A)** Defer to theming / v2 |
+| M10 | Breakpoint classification model | **(C) Approved** — `breakpoint` + derived booleans |
+| M11 | Invalid `breakpoints` config | **(C) Approved** — dev warning + default thresholds |
+
+### M1 — SSR defaults
+
+**Question:** Default `MediaQueryData` when `initialData` is omitted?
+
+**Options:** (A) Mobile-first realistic defaults. (B) Desktop-first. (C) `0×0` “unknown”.
+
+**Recommendation:** **(A)** `width: 360`, `height: 640`, `orientation: Orientation.portrait`, `breakpoint: Breakpoint.mobile`, derived booleans matching `breakpoint`.
+
+**Reason:** Matches common SSR audience; avoids desktop-only first paint; progressive enhancement when JS updates.
+
+### M2 — Breakpoint thresholds
+
+**Question:** Default `mobileMax` / `tabletMax`?
+
+**Options:** (A) `599` / `1023`. (B) Bootstrap `767` / `991`. (C) Config-only, no defaults.
+
+**Recommendation:** **(A)** Material-adjacent; overridable via `breakpoints` prop.
+
+### M3 — Viewport size source
+
+**Question:** Which API supplies `width` / `height`?
+
+**Options:** (A) `innerWidth` / `innerHeight`. (B) `visualViewport`. (C) `document.documentElement.client*`.
+
+**Recommendation:** **(A)** for v1.25 layout viewport; document `visualViewport` for future `viewInsets`.
+
+### M4 — Provider DOM
+
+**Question:** Does `<MediaQuery>` render a wrapper?
+
+**Options:** (A) Passthrough / fragment when context allows. (B) Always `<div>`.
+
+**Recommendation:** **(A)** — minimal DOM (Principle #3–#4).
+
+### M5 — Listener strategy
+
+**Question:** How to update on viewport changes?
+
+**Options:** (A) `resize` + `matchMedia` at tier boundaries. (B) `resize` only. (C) `matchMedia` only.
+
+**Recommendation:** **(A)** — accurate width and tier transitions.
+
+### M6 — Hook outside provider
+
+**Question:** `useMediaQuery()` with no ancestor `<MediaQuery>`?
+
+**Options:** (A) Return SSR defaults + dev warning. (B) Throw.
+
+**Recommendation:** **(A)** — SSR and tests stay usable.
+
+### M7 — `size` object
+
+**Question:** Ship `size: { width, height }`?
+
+**Options:** (A) Flat `width`/`height` only. (B) Add `size` alias.
+
+**Recommendation:** **(A)** — document Flutter `size` mapping in §25 Notes.
+
+### M8 — Square viewport
+
+**Question:** `width === height` → which `orientation`?
+
+**Options:** (A) `portrait`. (B) `landscape`.
+
+**Recommendation:** **(A)** — stable tie-break.
+
+### M9 — `prefers-*` booleans
+
+**Question:** Ship `prefersReducedMotion` / `prefersDarkMode` on `MediaQueryData`?
+
+**Options:** (A) Defer. (B) Ship read-only booleans.
+
+**Recommendation:** **(A)** — theming §34.4 owns brightness; keep v1.25 focused.
+
+### M10 — Breakpoint classification model
+
+**Status:** **Approved — (C).** `breakpoint: Breakpoint` authoritative; `isMobile` / `isTablet` / `isDesktop` derived. See §25 invariant. Do not reopen without new open question.
+
+### M11 — Custom breakpoint validation
+
+**Question:** Invalid `breakpoints` (e.g. `mobileMax: 1024`, `tabletMax: 768`)?
+
+**Options:** (A) Throw. (B) Clamp silently. (C) Dev warning + default thresholds.
+
+**Recommendation:** **(C)** — aligns with Decision #38; SSR-safe; predictable (§25 Notes).
+
+---
+
+---
+
+## 28. v1.2 scrolling — shared enums review
 
 Candidates considered for v1.2. **None are added** to §1 unless listed below.
 
@@ -2867,14 +3312,14 @@ Candidates considered for v1.2. **None are added** to §1 unless listed below.
 
 ---
 
-## 26. v1.2 Scrolling open questions
+## 29. v1.2 Scrolling open questions
 
-Resolve before v1.2 implementation. Record approvals in §30 decisions log.
+Resolve before v1.2 implementation. Record approvals in §33 decisions log.
 
 | ID  | Widget / scope            | Topic                                      | Recommendation                          |
 | --- | ------------------------- | ------------------------------------------ | --------------------------------------- |
 | S1  | `SingleChildScrollView`   | Scrollbar styling                          | **(A)** System scrollbars only in v1.2  |
-| S2  | All scrolling             | `axis` vs `scrollDirection`                | **(A)** `axis` only — §28.11            |
+| S2  | All scrolling             | `axis` vs `scrollDirection`                | **(A)** `axis` only — §34.11            |
 | S3  | All scrolling             | Nested scroll                              | **(A)** Document caller responsibility    |
 | S4  | `SingleChildScrollView`   | `reverse` implementation                   | **(A)** Inner flex reverse              |
 | L1  | `ListView`                | Default list ARIA roles                    | **(B)** No automatic roles              |
@@ -2890,13 +3335,13 @@ Resolve before v1.2 implementation. Record approvals in §30 decisions log.
 
 **Question:** System scrollbars only, or optional `scrollbar` prop in v1.2?
 
-**Recommendation:** **(A)** System/UA scrollbars only. Custom `Scrollbar` widget deferred to v2 (§31).
+**Recommendation:** **(A)** System/UA scrollbars only. Custom `Scrollbar` widget deferred to v2 (§34).
 
 ### S2 — `axis` vs `scrollDirection`
 
 **Question:** Reuse `axis` or introduce `scrollDirection` / `ScrollDirection`?
 
-**Recommendation:** **(A)** `axis` only. See §22–§24 Flutter parity note and §28.11.
+**Recommendation:** **(A)** `axis` only. See §22–§24 Flutter parity note and §31.11.
 
 ### S3 — Nested scroll
 
@@ -2936,9 +3381,9 @@ Resolve before v1.2 implementation. Record approvals in §30 decisions log.
 
 ---
 
-## 27. Open questions (approval required)
+## 30. Open questions (approval required)
 
-All items **approved** — recorded in §30 decisions #32–42. Retained here as an audit trail. Implementation PRs for v1.1 may proceed.
+All items **approved** — recorded in §33 decisions #32–42. Retained here as an audit trail. Implementation PRs for v1.1 may proceed.
 
 | ID    | Question | Options | Resolution |
 | ----- | -------- | ------- | ---------- |
@@ -2954,7 +3399,7 @@ All items **approved** — recorded in §30 decisions #32–42. Retained here as
 | 27.10 | **Default semantic tag for `Card`?** | (A) `"div"`. (B) `"article"`. | **(A) Approved** — decision #41. |
 | 27.11 | **`Align` implementation strategy?** | (A) CSS Grid (`place-items`). (B) Absolute positioning. | **(A) Approved** — decision #42. |
 
-### 27.8 Button loading state
+### 30.8 Button loading state
 
 **Question:** Should `Button` ship with loading support in v1.1?
 
@@ -2977,7 +3422,7 @@ All items **approved** — recorded in §30 decisions #32–42. Retained here as
 
 ---
 
-### 27.9 Image lazy loading
+### 30.9 Image lazy loading
 
 **Question:** What should be the default `loading` behavior for `Image`?
 
@@ -2999,7 +3444,7 @@ All items **approved** — recorded in §30 decisions #32–42. Retained here as
 
 ---
 
-### 27.10 Card semantic tag
+### 30.10 Card semantic tag
 
 **Question:** What should be the default semantic tag used by `Card`?
 
@@ -3020,7 +3465,7 @@ All items **approved** — recorded in §30 decisions #32–42. Retained here as
 
 ---
 
-### 27.11 Align implementation strategy
+### 30.11 Align implementation strategy
 
 **Question:** What implementation strategy should `Align` use internally?
 
@@ -3043,11 +3488,11 @@ All items **approved** — recorded in §30 decisions #32–42. Retained here as
 
 ---
 
-## 28. API consistency review
+## 31. API consistency review
 
 Findings from a self-review against Principles #1–#10 and the established conventions. All items below have been resolved or updated for v1.1.
 
-### 28.1 Confirmed consistent
+### 31.1 Confirmed consistent
 
 - **Naming.** All flex children use `flex?: number`, all clip props use the `Clip` enum, all alignment props use either `Alignment` or `*Alignment` enums per Flutter. Container's `backgroundColor` is distinct from Text's `color` because they're semantically different (background vs foreground).
 - **Defaults.** Flex defaults (`crossAxisAlignment: center`, `mainAxisSize: max`) match Flutter. `Stack.clipBehavior: hardEdge` matches Flutter. All other widgets default to `Clip.none` / `overflow: visible`.
@@ -3055,14 +3500,14 @@ Findings from a self-review against Principles #1–#10 and the established conv
 - **Type sharing.** `RowProps`/`ColumnProps` both alias `FlexProps`. Every widget extends `BaseProps`. `BorderRadius`, `BoxShadow`, `Gradient`, `BorderSide` are exported from `_shared/types.ts` and used consistently.
 - **Folder structure.** All widgets follow `lib/<widget>/{<widget>.tsx, types.ts, index.ts}` (+ optional `*.module.css`).
 
-### 28.2 Decisions encoded since the last review
+### 31.2 Decisions encoded since the last review
 
 - `Flexible` is now a v1 widget (§9), and `FlexFit` joins the enum catalog (§1.12). `Expanded`'s note now cross-references `Flexible`.
 - `MainAxisSize` already existed (§1.3) — this revision documents its behavior + CSS mapping properly. `Row` and `Column` prop tables now describe `min` vs `max` instead of just listing the type.
 - `Alignment` already existed (§1.9) — this revision adds the full CSS mapping table for both flex-context and stack-context consumers.
 - `BaseProps` now includes `role` and open `aria-*` / `data-*` index signatures (§2). `data-testid` is no longer special-cased.
 
-### 28.3 [RESOLVED] Semantic HTML `as` prop on `Text`
+### 31.3 [RESOLVED] Semantic HTML `as` prop on `Text`
 
 **Gap:** `Text` always rendering `<span>` violated Principle #2 (Semantic HTML). Headings, paragraphs, and labels need their proper tags for SEO and accessibility.
 
@@ -3072,7 +3517,7 @@ Findings from a self-review against Principles #1–#10 and the established conv
 as?: TextTag;   // "span" | "p" | "div" | "label" | "h1"..."h6" | "strong" | "em" | "small"
 ```
 
-### 28.4 [RESOLVED] Semantic HTML `as` prop on `Container`
+### 31.4 [RESOLVED] Semantic HTML `as` prop on `Container`
 
 **Gap:** `Container` always rendering `<div>` was fine for most layout cases, but `<section>`, `<article>`, `<header>`, `<footer>`, `<nav>`, `<aside>`, `<main>` are common and Principle #2 says we should support them.
 
@@ -3082,7 +3527,7 @@ as?: TextTag;   // "span" | "p" | "div" | "label" | "h1"..."h6" | "strong" | "em
 as?: ContainerTag;   // "div" | "section" | "article" | "header" | "footer" | "nav" | "aside" | "main"
 ```
 
-### 28.5 [RESOLVED] `Wrap.spacing` / `Wrap.runSpacing` naming asymmetry with `Row.gap` / `Column.gap`
+### 31.5 [RESOLVED] `Wrap.spacing` / `Wrap.runSpacing` naming asymmetry with `Row.gap` / `Column.gap`
 
 **Gap:** Within the same library, you use `gap` on `Row`/`Column` but `spacing`/`runSpacing` on `Wrap`. Inconsistent at first glance.
 
@@ -3090,13 +3535,13 @@ as?: ContainerTag;   // "div" | "section" | "article" | "header" | "footer" | "n
 
 **Recommendation:** **Keep as-is.** Document the asymmetry in `Wrap`'s notes (already done in §11). No action needed; flagged here so the choice is on the record.
 
-### 28.6 [UPDATED] Event handlers on layout widgets
+### 31.6 [UPDATED] Event handlers on layout widgets
 
 **Gap:** Layout widgets have no `onClick$`. A clickable card must not use `onClick$` on `Card`/`Container`.
 
-**Resolution:** **Unchanged for layout widgets.** `Button` (§17) is the v1.1 interactive primitive; `Link` / `Tappable` remain v2 (§31). `Card` stays presentational — wrap with `Button` or use `Button` with `href` for navigation.
+**Resolution:** **Unchanged for layout widgets.** `Button` (§17) is the v1.1 interactive primitive; `Link` / `Tappable` remain v2 (§34). `Card` stays presentational — wrap with `Button` or use `Button` with `href` for navigation.
 
-### 28.7 [RESOLVED] Responsive prop shape (deferred to v2)
+### 31.7 [RESOLVED] Responsive prop shape (deferred to v2)
 
 **Gap:** Principle #9 promises responsive support; v1 only delivers it via CSS strings (`width="50%"`, `padding="clamp(...)"`).
 
@@ -3109,7 +3554,7 @@ type ContainerProps = { width?: Responsive<Length>; … };
 
 Reserved in the roadmap. Avoid prop-name conflicts in v1 so we can adopt this non-breakingly later.
 
-### 28.8 [RESOLVED] `Length` accepts arbitrary strings
+### 31.8 [RESOLVED] `Length` accepts arbitrary strings
 
 **Gap:** `Length = number | string` lets users pass anything — including invalid CSS. We don't validate.
 
@@ -3128,7 +3573,7 @@ All review items resolved.
 | 23.7  | Responsive prop shape                             | Deferred to v2.                           |
 | 23.8  | `Length` allows arbitrary strings                 | Kept (pragmatic).                         |
 
-### 28.9 [NEW] v1.1 basic UI + layout consistency
+### 31.9 [NEW] v1.1 basic UI + layout consistency
 
 - **`Card` vs `Container`:** `Card` owns surface/elevation defaults; `Container` owns sizing/alignment/constraints. No prop duplication beyond shared decoration types.
 - **`Button.color` vs `Text.color`:** both mean foreground; `Container.backgroundColor` remains background.
@@ -3139,19 +3584,19 @@ All review items resolved.
 - **`Align` vs `Center`:** `Center` = centered `Align`; factors only on `Align` (§20).
 - **`AspectRatio`** uses CSS `aspect-ratio`; no client measurement (Principle #4).
 
-### 28.10 [NEW] v1.2 scrolling consistency
+### 31.10 [NEW] v1.2 scrolling consistency
 
 | Check | Status | Notes |
 | ----- | ------ | ----- |
 | Flutter parity primary | Pass | `mainAxisSpacing`, `columns`, `childAspectRatio`; `gap` as `crossAxisSpacing` analogue. |
-| `axis` not `scrollDirection` | Pass | §28.11; Flutter parity note in §22–§24. |
-| No new enums in v1.2 | Pass | §25 defers `ScrollDirection`, `ScrollPhysics`, `ScrollBehavior`. |
+| `axis` not `scrollDirection` | Pass | §31.11; Flutter parity note in §22–§24. |
+| No new enums in v1.2 | Pass | §28 defers `ScrollDirection`, `ScrollPhysics`, `ScrollBehavior`. |
 | CSS Grid documented | Pass | §24 CSS mapping table. |
 | Deferred APIs separated | Pass | v1.2 vs v2 in §23 Notes and §31. |
-| Accessibility | Pass | No default list/grid roles (§26 L1). |
+| Accessibility | Pass | No default list/grid roles (§29 L1). |
 | SSR | Pass | CSS `overflow` / grid only in v1.2. |
 
-### 28.11 [NEW] Scrolling widgets — `axis` vs Flutter `scrollDirection`
+### 31.11 [NEW] Scrolling widgets — `axis` vs Flutter `scrollDirection`
 
 **Decision:** All v1.2 scrolling widgets expose **`axis?: Axis`**, not `scrollDirection`.
 
@@ -3161,9 +3606,34 @@ All review items resolved.
 
 **Justification:** Principle #10 (consistent prop names) + Principle #7 (smaller surface). Behavior matches Flutter; only the identifier differs.
 
+### 31.12 [NEW] v1.25 MediaQuery consistency
+
+| Check | Status | Notes |
+| ----- | ------ | ----- |
+| Flutter parity (viewport + orientation) | Pass | `useMediaQuery()` ↔ `MediaQuery.of(context)` |
+| `breakpoint` + derived booleans (M10-C) | Pass | §25 invariant; `Breakpoint` §1.28 shared |
+| `Orientation` vs `Axis` | Pass | Separate §1 enums |
+| No global store | Pass | Qwik context only (Principle #5) |
+| SSR / `initialData` documented | Pass | §25 Notes; `breakpoint` in examples |
+| Invalid `breakpoints` (M11-C) | Pass | Dev warning + defaults; no throw |
+| Accessibility | Pass | No default roles; no DOM removal anti-pattern |
+| Deferred metrics separated | Pass | SafeArea, forms, theming milestones |
+| Exactly two new §1 enums | Pass | `Orientation`, `Breakpoint` only |
+
+**Flutter parity review:**
+
+| Flutter | qwik-flutter-ui | Keep? |
+| ------- | --------------- | ----- |
+| `MediaQuery.of(context)` | `useMediaQuery()` | Yes — Qwik idiom |
+| `MediaQueryData.size` | flat `width` / `height` | Yes |
+| `isMobile` / `isTablet` / `isDesktop` | derived convenience | Yes — documented extension |
+| `breakpoint` tier | `Breakpoint` enum | Yes — library model |
+| `padding` / `viewInsets` | deferred | Yes — §25 Deferred APIs |
+| `MediaQuery.of()` static | not shipped | Yes |
+
 ---
 
-## 29. Summary table
+## 32. Summary table
 
 | Widget       | Children      | v1? | Key Flutter divergence                                                         |
 | ------------ | ------------- | --- | ------------------------------------------------------------------------------ |
@@ -3189,12 +3659,13 @@ All review items resolved.
 | `SingleChildScrollView` | one (slot) | 1.2 | `axis` not `scrollDirection`; `clipBehavior` default `hardEdge`; CSS overflow (§22). |
 | `ListView`   | many (slot)   | 1.2 | `gap` extension; no default list ARIA roles; non-virtualized; `axis` not `scrollDirection` (§23). |
 | `GridView`   | many (slot)   | 1.2 | `gap` = `crossAxisSpacing`; `mainAxisSpacing`; `minItemWidth`; CSS Grid (§24).          |
+| `MediaQuery` | provider + hook | 1.25 | `useMediaQuery()` not `MediaQuery.of()`; `breakpoint` + derived flags; shared `Breakpoint` (§25). |
 
 ---
 
-## 30. Decisions log
+## 33. Decisions log
 
-v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in §27.
+v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in §30.
 
 | #  | Decision                                                                                          | Resolution                                                              |
 | -- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -3229,17 +3700,17 @@ v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in 
 | 29 | **`Text.as` for semantic HTML**                                                                   | **Shipped in v1.** `TextTag` union; default `"span"` (§14).             |
 | 30 | **`Container.as` for semantic HTML**                                                              | **Shipped in v1.** `ContainerTag` union; default `"div"` (§5).          |
 | 31 | `BaseProps` accessibility passthrough                                                             | `role` + open `aria-*` / `data-*` index signatures (§2).                |
-| 32 | **`Card.margin` default** (§27.1)                                                                 | **No default margin** — caller opts in; document Flutter `margin: 4` in examples. |
-| 33 | **`Button` + `href`** (§27.2)                                                                     | **Automatically render `<a>`** when `href` is set (no `as="a"` required). |
-| 34 | **`ButtonVariant.elevated` in v1.1** (§27.3)                                                      | **Ship `elevated`** alongside `filled`, `outlined`, `text`.               |
-| 35 | **`Visibility` hidden behavior** (§27.4)                                                          | **Apply `inert`** (and `pointer-events: none`) when `visible={false}`.   |
-| 36 | **`Image` `BoxFit.fitWidth` / `fitHeight`** (§27.5)                                               | **Deferred** — v1.1 ships `fill`, `contain`, `cover`, `none`, `scaleDown` only. |
-| 37 | **v1.1 release grouping** (§27.6)                                                                 | **Single milestone** — all seven v1.1 widgets; implement `Button` last.  |
-| 38 | **`AspectRatio` invalid ratio** (§27.7)                                                            | **Clamp to `1`** and emit **dev warning** in development builds.          |
-| 39 | **`Button` loading state** (§27.8)                                                                | **Defer `loading` prop to v1.2** — keep v1.1 `Button` minimal.            |
-| 40 | **`Image` default `loading`** (§27.9)                                                             | **Default `ImageLoading.lazy`** (`loading="lazy"`); heroes opt into `eager`. |
-| 41 | **`Card` default semantic tag** (§27.10)                                                          | **Default `as="div"`**; consumers use `as="article"` when appropriate.  |
-| 42 | **`Align` implementation** (§27.11)                                                               | **CSS Grid** (`place-items`) — not absolute positioning.                  |
+| 32 | **`Card.margin` default** (§30.1)                                                                 | **No default margin** — caller opts in; document Flutter `margin: 4` in examples. |
+| 33 | **`Button` + `href`** (§30.2)                                                                     | **Automatically render `<a>`** when `href` is set (no `as="a"` required). |
+| 34 | **`ButtonVariant.elevated` in v1.1** (§30.3)                                                      | **Ship `elevated`** alongside `filled`, `outlined`, `text`.               |
+| 35 | **`Visibility` hidden behavior** (§30.4)                                                          | **Apply `inert`** (and `pointer-events: none`) when `visible={false}`.   |
+| 36 | **`Image` `BoxFit.fitWidth` / `fitHeight`** (§30.5)                                               | **Deferred** — v1.1 ships `fill`, `contain`, `cover`, `none`, `scaleDown` only. |
+| 37 | **v1.1 release grouping** (§30.6)                                                                 | **Single milestone** — all seven v1.1 widgets; implement `Button` last.  |
+| 38 | **`AspectRatio` invalid ratio** (§30.7)                                                            | **Clamp to `1`** and emit **dev warning** in development builds.          |
+| 39 | **`Button` loading state** (§30.8)                                                                | **Defer `loading` prop to v1.2** — keep v1.1 `Button` minimal.            |
+| 40 | **`Image` default `loading`** (§30.9)                                                             | **Default `ImageLoading.lazy`** (`loading="lazy"`); heroes opt into `eager`. |
+| 41 | **`Card` default semantic tag** (§30.10)                                                          | **Default `as="div"`**; consumers use `as="article"` when appropriate.  |
+| 42 | **`Align` implementation** (§30.11)                                                               | **CSS Grid** (`place-items`) — not absolute positioning.                  |
 | 43 | **v1.1 `Card` widget**                                                                            | Surface widget §15; shares decoration types; not a `Container` alias.     |
 | 44 | **v1.1 `Divider` widget**                                                                         | Unified `axis`; `<hr>` horizontal / `role="separator"` vertical.        |
 | 45 | **v1.1 `Button` widget**                                                                          | First interactive primitive; `InteractiveProps`; §0.7 conventions.      |
@@ -3255,21 +3726,32 @@ v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in 
 | 52 | **v1.1 `Align` widget**                                                                           | Layout positioning; `widthFactor`/`heightFactor`; §20.                  |
 | 53 | **v1.1 `AspectRatio` widget**                                                                     | Required ratio; CSS `aspect-ratio`; §21.                                |
 | 54 | **`ButtonSize` enum**                                                                             | Documented §1.26; **not** shipped until v1.2+.                          |
-| 55 | **Scrolling widgets**                                                                             | Specified §22–§24; implement after §26 open questions resolved.           |
-| 56 | **Forms + Theming**                                                                               | Roadmap-only §31.3–§31.5; no full API in v1.1.                           |
-| 57 | **Scrolling `axis` vs `scrollDirection`** (§26 S2, §28.11)                                        | **`axis` only** — no alias, no `ScrollDirection` enum.                    |
-| 58 | **`ListView` ARIA roles** (§26 L1)                                                                | **No automatic** `role="list"` / `listitem"`.                            |
-| 59 | **`ListView.gap` in v1.2** (§26 L5)                                                               | **Ship `gap`** — documented Flutter extension.                          |
-| 60 | **`GridView` spacing** (§26 G3)                                                                   | **`gap` + `mainAxisSpacing`** — not `runSpacing`.                       |
-| 61 | **`GridView` `columns` + `minItemWidth`** (§26 G4)                                                | **Ship both**; `columns` wins when both set.                            |
+| 55 | **Scrolling widgets**                                                                             | Specified §22–§24; implement after §29 open questions resolved.           |
+| 56 | **Forms + Theming**                                                                               | Roadmap-only §34.3–§34.5; no full API in v1.1.                           |
+| 57 | **Scrolling `axis` vs `scrollDirection`** (§29 S2, §31.11)                                        | **`axis` only** — no alias, no `ScrollDirection` enum.                    |
+| 58 | **`ListView` ARIA roles** (§29 L1)                                                                | **No automatic** `role="list"` / `listitem"`.                            |
+| 59 | **`ListView.gap` in v1.2** (§29 L5)                                                               | **Ship `gap`** — documented Flutter extension.                          |
+| 60 | **`GridView` spacing** (§29 G3)                                                                   | **`gap` + `mainAxisSpacing`** — not `runSpacing`.                       |
+| 61 | **`GridView` `columns` + `minItemWidth`** (§29 G4)                                                | **Ship both**; `columns` wins when both set.                            |
+| 62 | **M1 SSR defaults** (§27)                                                                         | Pending §27 approval — recommend mobile-first `360×640`, `Breakpoint.mobile`. |
+| 63 | **M2 breakpoint thresholds** (§27)                                                                | Pending — recommend `mobileMax: 599`, `tabletMax: 1023`.                  |
+| 64 | **M3 viewport source** (§27)                                                                      | Pending — recommend `innerWidth` / `innerHeight`.                       |
+| 65 | **M4 `<MediaQuery>` DOM** (§27)                                                                   | Pending — recommend passthrough / zero layout DOM.                      |
+| 66 | **M5 listener strategy** (§27)                                                                    | Pending — recommend `resize` + `matchMedia`.                            |
+| 67 | **M6 hook outside provider** (§27)                                                                | Pending — recommend defaults + dev warning.                             |
+| 68 | **M7 flat width/height** (§27)                                                                    | Pending — recommend flat only.                                          |
+| 69 | **M8 square orientation** (§27)                                                                   | Pending — recommend `portrait` tie-break.                               |
+| 70 | **M9 prefers-* booleans** (§27)                                                                   | Pending — recommend defer.                                              |
+| 71 | **M10 breakpoint model** (§27)                                                                    | **(C) Approved** — `breakpoint` authoritative + derived booleans.       |
+| 72 | **M11 invalid breakpoints** (§27)                                                                 | **(C) Approved** — dev warning + default thresholds.                    |
 
 ---
 
-## 31. Roadmap
+## 34. Roadmap
 
 ### Version roadmap summary
 
-Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§21; scrolling §22–§24; forms/theming §31.3–§31.5.
+Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§21; scrolling §22–§24; `MediaQuery` §25; forms/theming §34.3–§34.5.
 
 #### v1.0
 
@@ -3305,7 +3787,7 @@ Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§
 
 #### v1.25 — Responsive utilities
 
-- `MediaQuery` — roadmap-level only (§31); no frozen prop table yet
+- `MediaQuery` (§25) — `useMediaQuery()`, `<MediaQuery>` provider; shared `Orientation` (§1.27), `Breakpoint` (§1.28)
 
 #### v1.3 — Forms (core)
 
@@ -3329,8 +3811,8 @@ Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§
 #### Future (v2+)
 
 - `ThemeProvider`, `ThemeData`, `ColorScheme`, `TextTheme`
-- `SafeArea`, `ScrollController`, `PageView`, `CustomScrollView`, `SliverList`, `SliverGrid`, `Scrollbar` — §31
-- `Responsive<T>` — §31
+- `SafeArea`, `ScrollController`, `PageView`, `CustomScrollView`, `SliverList`, `SliverGrid`, `Scrollbar` — §34
+- `Responsive<T>` — §34
 - Plus: `Link`, `IconButton`, animation primitives
 
 ---
@@ -3380,7 +3862,7 @@ Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§
 
 **Implementation sequence (v1.1 — next):**
 
-1. Resolve open questions in §27.
+1. Resolve open questions in §30.
 2. Extend `src/lib/_shared/enums.ts` with §1.21–§1.23.
 3. Extend `src/lib/_shared/types.ts` with `ButtonTag`, `InteractiveProps`; export `ContainerTag` from §2 centrally.
 4. Implement layout batch: `Align`, `AspectRatio`.
@@ -3404,7 +3886,7 @@ Fully specified in **§22–§24**. Resolve open questions in **§26** before im
 
 **Implementation sequence (v1.2 — after v1.1):**
 
-1. Resolve open questions in §26.
+1. Resolve open questions in §29.
 2. Implement `SingleChildScrollView`, `ListView`, `GridView` (§22–§24).
 3. Implement `ButtonSize` on `Button` (§1.26).
 4. Update `src/index.ts` and playground scroll demos.
@@ -3430,15 +3912,15 @@ Roadmap-level only — **no API design** yet.
 
 ### v1.25 — Responsive utilities
 
-#### `MediaQuery`
+Fully specified in **§25–§27**. Resolve open questions in **§27** before implementation (M10–M11 approved; M1–M9 pending).
 
-| | |
-| - | - |
-| **Purpose** | Expose viewport / device metrics (size, orientation, padding, text scale) to descendants — Flutter `MediaQuery.of(context)` mental model. |
-| **Flutter equivalent** | [`MediaQuery`](https://api.flutter.dev/flutter/widgets/MediaQuery-class.html) |
-| **Why it matters** | Breakpoints, safe areas, keyboard inset, text scaling; dependency for responsive `GridView`/`ListView`, forms, and `Responsive<T>`. |
-| **High-level API direction** | CSS-first (`matchMedia`, `env(safe-area-inset-*)`) + optional Qwik context for SSR/hydration. No global store (Principle #5). |
-| **Future considerations** | `MediaQueryData`-shaped object; `useMediaQuery()`; keyboard/viewInsets may need `useVisibleTask$` — design pass at v1.25. |
+**Implementation sequence (v1.25 — after v1.2):**
+
+1. Resolve open questions in §27 (M1–M9).
+2. Extend `src/lib/_shared/enums.ts` with `Orientation` (§1.27), `Breakpoint` (§1.28).
+3. Implement `src/lib/media-query/` — `MediaQuery`, `useMediaQuery`, types from §25.
+4. Export `Breakpoint`, `Orientation`, `MediaQuery`, `useMediaQuery` from `src/index.ts`.
+5. Playground responsive demos (padding, `GridView`, layout switch).
 
 ### Future layout utilities (v2)
 
@@ -3465,7 +3947,7 @@ Roadmap-level only — **no API design** yet.
 
 ### Forms (v1.3–v1.5)
 
-Roadmap-level only — **no frozen prop tables**. Full design after v1.2 scrolling and v1.25 `MediaQuery` direction are settled. Widget list: **§31 version roadmap summary** (v1.3–v1.5).
+Roadmap-level only — **no frozen prop tables**. Full design after v1.2 scrolling and v1.25 `MediaQuery` direction are settled. Widget list: **§34 version roadmap summary** (v1.3–v1.5).
 
 | Widget | Purpose | Proposed API direction | Flutter equivalent |
 | ------ | ------- | ---------------------- | ------------------ |
@@ -3493,7 +3975,7 @@ Roadmap-level only — **no frozen prop tables**. Full design after v1.2 scrolli
 
 - `FormField<T>` generic wrapper pattern (Flutter parity).
 - Masking, OTP, autocomplete attributes — v2+.
-- Depends on **theming** for consistent focus/error colors (§31.4).
+- Depends on **theming** for consistent focus/error colors (§34.4).
 
 ---
 
@@ -3527,7 +4009,7 @@ Roadmap-level only — informs `ButtonSize`, `Divider` colors, and form focus ri
 ### v2 — Expansion (future)
 
 - **Interactive primitives:** `Link`, `IconButton`, `Tappable` — extends §17 `Button` patterns.
-- **Responsive prop shape:** `Responsive<T>` wrapper — addresses §28.7 and Principle #9.
+- **Responsive prop shape:** `Responsive<T>` wrapper — addresses §31.7 and Principle #9.
 - **Virtualized lists / grids** — builder APIs for `ListView` / `GridView`.
 - **Animation:** `AnimatedContainer`, `AnimatedOpacity`, transition primitives.
 
@@ -3538,11 +4020,12 @@ Roadmap-level only — informs `ButtonSize`, `Divider` colors, and form focus ri
 | **v1.0** | 12 layout/typography widgets, 20 enums, shared types incl. `ContainerTag`, `TextTag`. |
 | **v1.1** | +7 widgets (§15–§21); +5 enums (`BoxFit`, `ButtonVariant`, `ImageLoading`, `ImagePlaceholder`, `ImageError`); `InteractiveProps`; `ButtonSize` doc-only (§1.26). |
 | **v1.2** | Scrolling §22–§24; `ButtonSize` implementation; polish items. |
-| **Future** | Forms §31.3, Theming §31.4, virtualization, `Link`, `Responsive<T>`, animation. |
+| **v1.25** | `MediaQuery` §25–§27; `Orientation`, `Breakpoint` enums (§1.27–§1.28). |
+| **Future** | Forms §34.3, Theming §34.4, virtualization, `Link`, `Responsive<T>`, animation. |
 
 ---
 
-## 32. Final implementation checklist
+## 35. Final implementation checklist
 
 Concrete, line-item to-do list. Work top-to-bottom within each phase.
 
@@ -3592,7 +4075,7 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 
 ### Phase 6 — v1.1 basic UI + layout
 
-> **Gate:** §27 open questions approved.
+> **Gate:** §30 v1.1 open questions approved.
 
 - [ ] Extend `_shared/enums.ts` — `BoxFit`, `ButtonVariant`, `ImageLoading`, `ImagePlaceholder`, `ImageError` (§1.21–§1.25).
 - [ ] Extend `_shared/types.ts` — `ButtonTag`, `InteractiveProps`; centralize `ContainerTag` export (§2).
@@ -3631,7 +4114,7 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 
 ### Phase 10 — v1.2 scrolling
 
-> **Gate:** §26 v1.2 scrolling open questions resolved.
+> **Gate:** §29 v1.2 scrolling open questions resolved.
 
 - [ ] `src/lib/single-child-scroll-view/` — `SingleChildScrollViewProps` from §22.
 - [ ] `src/lib/list-view/` — `ListViewProps` from §23.
@@ -3640,4 +4123,14 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 - [ ] Playground scroll demos (forms, list, grid).
 - [ ] Update `src/index.ts` exports (§0.10).
 
-> Out of scope for this checklist: v1.25 `MediaQuery`, forms/theming (§31.3–§31.5), and v2 expansion. Separate checklists when those milestones open.
+### Phase 11 — v1.25 MediaQuery
+
+> **Gate:** §27 v1.25 MediaQuery open questions resolved (M10–M11 approved; M1–M9 pending).
+
+- [ ] Extend `_shared/enums.ts` — `Orientation` (§1.27), `Breakpoint` (§1.28).
+- [ ] `src/lib/media-query/` — `MediaQueryProps`, `MediaQueryData`, `MediaQueryBreakpoints` from §25.
+- [ ] `useMediaQuery()` hook + `<MediaQuery>` provider (context, SSR `initialData`, breakpoint validation §27 M11).
+- [ ] Export from `src/index.ts`; unit-test enum identity + breakpoint classification + invalid config warning.
+- [ ] Playground: responsive padding, `GridView`, layout switch per §25 Usage.
+
+> Out of scope for Phases 1–10: v1.25 `MediaQuery` (Phase 11), forms/theming (§34.3–§34.5), and v2 expansion.
