@@ -1,0 +1,121 @@
+/*
+ * TextField — native input / textarea with decoration chrome (§29).
+ */
+
+.root {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.label {
+  display: block;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: inherit;
+  cursor: pointer;
+}
+
+.requiredMark {
+  margin-left: 0.125rem;
+  color: #c62828;
+}
+
+.fieldRow {
+  box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border: 1px solid #bdbdbd;
+  border-radius: 0.25rem;
+  background-color: #fff;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.fieldRow:focus-within {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 1px #1976d2;
+}
+
+.fieldRowDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fieldRowInvalid {
+  border-color: #c62828;
+}
+
+.fieldRowInvalid:focus-within {
+  border-color: #c62828;
+  box-shadow: 0 0 0 1px #c62828;
+}
+
+.prefix,
+.suffix {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+  color: #616161;
+}
+
+.control {
+  box-sizing: border-box;
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: inherit;
+}
+
+.control:focus {
+  outline: none;
+}
+
+.control:focus-visible {
+  outline: none;
+}
+
+.control:disabled {
+  cursor: not-allowed;
+}
+
+.control::placeholder {
+  color: #9e9e9e;
+  opacity: 1;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 2.5rem;
+}
+
+.helper {
+  display: block;
+  font-size: 0.75rem;
+  line-height: 1.33;
+  color: #616161;
+}
+
+.error {
+  display: block;
+  font-size: 0.75rem;
+  line-height: 1.33;
+  color: #c62828;
+}
