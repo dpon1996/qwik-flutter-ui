@@ -18,6 +18,8 @@ export interface RadioGroupProps extends BaseProps {
   defaultValue?: string;
   onChange$?: QRL<(value: string, ev: Event) => void>;
   disabled?: boolean;
+  /** Native `required` — one option in the group must be selected (§53). */
+  required?: boolean;
   /** Group label — renders `<legend>`. */
   legend?: string;
 }

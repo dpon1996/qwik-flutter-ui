@@ -13,7 +13,7 @@ import {
   useContext,
   useId,
   useSignal,
-  useVisibleTask$,
+  useTask$,
   type CSSProperties,
 } from "@builder.io/qwik";
 
@@ -58,18 +58,24 @@ export const Dropdown = component$<DropdownProps>((props) => {
   );
   const touched = useSignal(false);
 
-  useVisibleTask$(async ({ cleanup }) => {
+  const getValue$ = $((): string =>
+    value !== undefined ? (value ?? "") : (internalValue.value ?? ""),
+  );
+  const setError$ = $((_message: string | undefined) => {});
+  const getTouched$ = $((): boolean => touched.value);
+  const setTouched$ = $((next: boolean) => {
+    touched.value = next;
+  });
+
+  useTask$(async ({ cleanup }) => {
     if (!form || !name) return;
 
     const unregister = await form.registerField$({
       name,
-      getValue: () =>
-        value !== undefined ? (value ?? "") : (internalValue.value ?? ""),
-      setError: () => {},
-      getTouched: () => touched.value,
-      setTouched: (next) => {
-        touched.value = next;
-      },
+      getValue$,
+      setError$,
+      getTouched$,
+      setTouched$,
     });
 
     cleanup(unregister);

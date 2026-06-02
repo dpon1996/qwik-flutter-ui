@@ -14,6 +14,7 @@ import {
   Slot,
   useContext,
   useId,
+  useTask$,
   type CSSProperties,
 } from "@builder.io/qwik";
 
@@ -65,6 +66,16 @@ export const Radio = component$<RadioProps>((props) => {
   const isChecked = group.selectedValue === value;
   const isDisabled = group.disabled || optionDisabled;
 
+  useTask$(() => {
+    if (!group.required || group.requiredRadioValue.value !== undefined) {
+      return;
+    }
+    group.requiredRadioValue.value = value;
+  });
+
+  const showRequired =
+    group.required && group.requiredRadioValue.value === value;
+
   const handleChange = $((ev: Event) => {
     const input = ev.target as HTMLInputElement;
     if (input.checked) {
@@ -83,6 +94,7 @@ export const Radio = component$<RadioProps>((props) => {
         class={styles.input}
         checked={isChecked}
         disabled={isDisabled || undefined}
+        required={showRequired || undefined}
         onChange$={handleChange}
       />
       <RadioLabel inputId={inputId} label={label} />

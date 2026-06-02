@@ -1,58 +1,76 @@
 import { $, component$, useSignal } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
+import type { FormValues } from "~/lib/_shared";
 import { Button } from "~/lib/button";
+import { Checkbox } from "~/lib/checkbox";
 import { Column } from "~/lib/column";
 import { Container } from "~/lib/container";
+import { Dropdown } from "~/lib/dropdown";
 import { Form } from "~/lib/form";
+import { Radio } from "~/lib/radio";
+import { RadioGroup } from "~/lib/radio-group";
 import { Switch } from "~/lib/switch";
 import { Text } from "~/lib/text";
 
+const COUNTRIES = [
+  { value: "us", label: "United States" },
+  { value: "ca", label: "Canada" },
+  { value: "mx", label: "Mexico" },
+];
+
 export default component$(() => {
-  const darkMode = useSignal(false);
   const submitResult = useSignal<string | null>(null);
+
+  const onFormSubmit = $((values: FormValues) => {
+    submitResult.value = JSON.stringify(values, null, 2);
+  });
 
   return (
     <Container padding={24}>
-      <Column gap={32}>
-        <Text as="h1">Switch</Text>
+      <Column gap={24}>
+        <Text as="h1">Selection controls + Form</Text>
 
-        <Column gap={8}>
-          <Text as="h2">Controlled</Text>
-          <Switch
-            label="Dark mode"
-            checked={darkMode.value}
-            onChange$={(on) => {
-              darkMode.value = on;
-            }}
-          />
-          <Text>On: {darkMode.value ? "yes" : "no"}</Text>
-        </Column>
+        <Form onSubmit$={onFormSubmit}>
+          <Column gap={16}>
+            <Checkbox
+              name="terms"
+              label="I agree to the terms"
+              required
+              defaultChecked={true}
+            />
+            <Switch
+              name="notifications"
+              label="Push notifications"
+              defaultChecked={true}
+            />
+            <RadioGroup
+              name="plan"
+              legend="Billing plan"
+              required
+              defaultValue="free"
+            >
+              <Column gap={8}>
+                <Radio value="free" label="Free" />
+                <Radio value="pro" label="Pro" />
+              </Column>
+            </RadioGroup>
+            <Dropdown
+              name="country"
+              label="Country"
+              placeholder="Select a country"
+              required
+              defaultValue="us"
+              options={COUNTRIES}
+            />
+            <Button type="submit">Submit</Button>
+          </Column>
+        </Form>
 
-        <Column gap={8}>
-          <Text as="h2">Inside Form</Text>
-          <Form
-            onSubmit$={$((values) => {
-              submitResult.value = JSON.stringify(values, null, 2);
-            })}
-          >
-            <Column gap={12}>
-              <Switch
-                name="notifications"
-                label="Push notifications"
-                defaultChecked={true}
-              />
-              <Switch
-                name="marketing"
-                label="Marketing emails"
-                defaultChecked={false}
-              />
-              <Button type="submit">Submit</Button>
-            </Column>
-          </Form>
-          {submitResult.value !== null && (
-            <Text>{submitResult.value}</Text>
-          )}
-        </Column>
+        <Text>
+          {submitResult.value === null
+            ? "Submit the form to see FormValues here."
+            : submitResult.value}
+        </Text>
       </Column>
     </Container>
   );

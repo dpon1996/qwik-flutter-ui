@@ -14,7 +14,7 @@ import {
   useContext,
   useId,
   useSignal,
-  useVisibleTask$,
+  useTask$,
   type CSSProperties,
 } from "@builder.io/qwik";
 
@@ -47,18 +47,24 @@ export const Checkbox = component$<CheckboxProps>((props) => {
   const internalChecked = useSignal(defaultChecked ?? false);
   const touched = useSignal(false);
 
-  useVisibleTask$(async ({ cleanup }) => {
+  const getValue$ = $((): boolean =>
+    checked !== undefined ? (checked ?? false) : internalChecked.value,
+  );
+  const setError$ = $((_message: string | undefined) => {});
+  const getTouched$ = $((): boolean => touched.value);
+  const setTouched$ = $((next: boolean) => {
+    touched.value = next;
+  });
+
+  useTask$(async ({ cleanup }) => {
     if (!form || !name) return;
 
     const unregister = await form.registerField$({
       name,
-      getValue: () =>
-        checked !== undefined ? (checked ?? false) : internalChecked.value,
-      setError: () => {},
-      getTouched: () => touched.value,
-      setTouched: (next) => {
-        touched.value = next;
-      },
+      getValue$,
+      setError$,
+      getTouched$,
+      setTouched$,
     });
 
     cleanup(unregister);

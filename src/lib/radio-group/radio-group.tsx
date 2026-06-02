@@ -15,7 +15,7 @@ import {
   useContext,
   useContextProvider,
   useSignal,
-  useVisibleTask$,
+  useTask$,
   type CSSProperties,
 } from "@builder.io/qwik";
 
@@ -43,6 +43,7 @@ export const RadioGroup = component$<RadioGroupProps>((props) => {
     defaultValue,
     onChange$,
     disabled = false,
+    required = false,
     legend,
     id,
     class: className,
@@ -73,6 +74,9 @@ export const RadioGroup = component$<RadioGroupProps>((props) => {
   const form = useContext(FormContext, null);
   const internalValue = useSignal<string | undefined>(defaultValue);
   const touched = useSignal(false);
+  const requiredRadioValue = useSignal<string | undefined>(
+    required && defaultValue !== undefined ? defaultValue : undefined,
+  );
 
   const selectedValue = value !== undefined ? value : internalValue.value;
 
@@ -87,25 +91,33 @@ export const RadioGroup = component$<RadioGroupProps>((props) => {
     }
   });
 
+  const getValue$ = $((): string =>
+    value !== undefined ? (value ?? "") : (internalValue.value ?? ""),
+  );
+  const setError$ = $((_message: string | undefined) => {});
+  const getTouched$ = $((): boolean => touched.value);
+  const setTouched$ = $((next: boolean) => {
+    touched.value = next;
+  });
+
   useContextProvider(RadioGroupContext, {
     name,
     selectedValue,
     disabled,
+    required,
+    requiredRadioValue,
     selectValue$,
   });
 
-  useVisibleTask$(async ({ cleanup }) => {
+  useTask$(async ({ cleanup }) => {
     if (!form) return;
 
     const unregister = await form.registerField$({
       name,
-      getValue: () =>
-        value !== undefined ? (value ?? "") : (internalValue.value ?? ""),
-      setError: () => {},
-      getTouched: () => touched.value,
-      setTouched: (next) => {
-        touched.value = next;
-      },
+      getValue$,
+      setError$,
+      getTouched$,
+      setTouched$,
     });
 
     cleanup(unregister);

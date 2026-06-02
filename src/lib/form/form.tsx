@@ -6,6 +6,7 @@
  * - Field registry via Qwik context (no global store).
  * - `noValidate` when `onSubmit$` or any `validator$` is registered (§34 F1).
  * - F6: `onUserInteraction` validates on `input` after the field is touched.
+ * - v1.4 selection: `checkValidity()` for native `required` before `validator$` (§53).
  */
 
 import {
@@ -24,14 +25,28 @@ import {
 } from "../_shared";
 
 import { FormContext, type FormFieldRegistration } from "./context";
+import { reportNativeFormValidity } from "./native-validation";
 import type { FormProps } from "./types";
 
 interface FormRegistry {
-  autovalidateMode: AutovalidateMode;
   fields: Record<string, FormFieldRegistration>;
   values: Record<string, FormFieldValue>;
   /** Set when `onSubmit$` or any registered field has `validator$` (§34 F1). */
   useNoValidate: boolean;
+}
+
+function resolveFormElement(ev: SubmitEvent): HTMLFormElement | null {
+  const target = ev.target;
+  if (target instanceof HTMLFormElement) {
+    return target;
+  }
+  if (ev.currentTarget instanceof HTMLFormElement) {
+    return ev.currentTarget;
+  }
+  if (target instanceof HTMLElement) {
+    return target.closest("form");
+  }
+  return null;
 }
 
 async function runFieldValidator(
@@ -55,23 +70,20 @@ export const Form = component$<FormProps>((props) => {
   } = props;
 
   const registry = useStore<FormRegistry>(() => ({
-    autovalidateMode,
     fields: {},
     values: {},
     useNoValidate: onSubmit$ !== undefined,
   }));
 
-  registry.autovalidateMode = autovalidateMode;
-
   const validateFieldByName = $(async (name: string): Promise<boolean> => {
     const field = registry.fields[name];
     if (!field) return true;
 
-    const value = field.getValue();
+    const value = await field.getValue$();
     registry.values[name] = value;
 
     const error = await runFieldValidator(field, value);
-    field.setError(error);
+    await field.setError$(error);
     return error === undefined;
   });
 
@@ -86,13 +98,14 @@ export const Form = component$<FormProps>((props) => {
     return valid;
   });
 
-  const collectValues = $((): FormValues => {
+  const collectValues = $(async (): Promise<FormValues> => {
     const values: FormValues = {};
 
     for (const name of Object.keys(registry.fields)) {
       const field = registry.fields[name];
-      values[name] = field.getValue();
-      registry.values[name] = field.getValue();
+      const value = await field.getValue$();
+      values[name] = value;
+      registry.values[name] = value;
     }
 
     return values;
@@ -103,38 +116,39 @@ export const Form = component$<FormProps>((props) => {
       const field = registry.fields[name];
       if (!field) return;
 
-      const value = field.getValue();
+      const value = await field.getValue$();
       registry.values[name] = value;
 
-      const mode = registry.autovalidateMode;
-
       if (kind === "input") {
-        if (!field.getTouched()) {
-          field.setTouched(true);
-          if (mode !== AutovalidateMode.always) {
+        if (!(await field.getTouched$())) {
+          await field.setTouched$(true);
+          if (autovalidateMode !== AutovalidateMode.always) {
             return;
           }
         }
       }
 
-      if (mode === AutovalidateMode.disabled) {
+      if (autovalidateMode === AutovalidateMode.disabled) {
         return;
       }
 
-      if (mode === AutovalidateMode.always && kind === "input") {
+      if (autovalidateMode === AutovalidateMode.always && kind === "input") {
         await validateFieldByName(name);
         return;
       }
 
-      if (mode === AutovalidateMode.onUserInteraction && kind === "input") {
+      if (
+        autovalidateMode === AutovalidateMode.onUserInteraction &&
+        kind === "input"
+      ) {
         await validateFieldByName(name);
       }
     },
   );
 
-  const registerField$ = $((field: FormFieldRegistration) => {
+  const registerField$ = $(async (field: FormFieldRegistration) => {
     registry.fields[field.name] = field;
-    registry.values[field.name] = field.getValue();
+    registry.values[field.name] = await field.getValue$();
 
     if (field.validate$) {
       registry.useNoValidate = true;
@@ -155,7 +169,7 @@ export const Form = component$<FormProps>((props) => {
   });
 
   useContextProvider(FormContext, {
-    autovalidateMode: registry.autovalidateMode,
+    autovalidateMode,
     registerField$,
     setFieldValue$,
     onFieldInteraction$,
@@ -168,13 +182,22 @@ export const Form = component$<FormProps>((props) => {
 
     ev.preventDefault();
 
+    const formEl = resolveFormElement(ev);
+    if (!formEl) {
+      return;
+    }
+
+    if (!reportNativeFormValidity(formEl)) {
+      return;
+    }
+
     const valid = await validateAllFields();
     if (!valid) {
       return;
     }
 
     const values = await collectValues();
-    await onSubmit$?.(values, ev);
+    await onSubmit$(values, ev);
   });
 
   const style: CSSProperties | undefined = userStyle
@@ -189,7 +212,6 @@ export const Form = component$<FormProps>((props) => {
       action={action}
       method={method}
       noValidate={registry.useNoValidate || undefined}
-      preventdefault:submit={onSubmit$ !== undefined}
       onSubmit$={onSubmit$ ? handleSubmit : undefined}
     >
       <Slot />

@@ -7,20 +7,22 @@ import { createContextId, type QRL } from "@builder.io/qwik";
 
 import type { AutovalidateMode, FormFieldValue } from "../_shared";
 
-/** Per-field handle registered with an ancestor `<Form>`. */
+/** Per-field handle registered with an ancestor `<Form>`. All callbacks are QRLs (§55). */
 export interface FormFieldRegistration {
   name: string;
-  getValue: () => FormFieldValue;
+  /** `string` (text, radio, dropdown) or `boolean` (checkbox, switch) — §53. */
+  getValue$: QRL<() => FormFieldValue>;
+  /** Text fields only; selection controls use native `required` (§53). */
   validate$?: QRL<(value: string) => string | undefined>;
-  setError: (message: string | undefined) => void;
-  getTouched: () => boolean;
-  setTouched: (touched: boolean) => void;
+  setError$: QRL<(message: string | undefined) => void>;
+  getTouched$: QRL<() => boolean>;
+  setTouched$: QRL<(touched: boolean) => void>;
 }
 
-/** Internal API consumed by `TextFormField`; implemented by `Form` (§31). */
+/** Internal API consumed by form fields; implemented by `Form` (§31). */
 export interface FormContextValue {
   autovalidateMode: AutovalidateMode;
-  registerField$: QRL<(field: FormFieldRegistration) => () => void>;
+  registerField$: QRL<(field: FormFieldRegistration) => Promise<() => void>>;
   setFieldValue$: QRL<(name: string, value: string) => void>;
   onFieldInteraction$: QRL<(name: string, kind: "input" | "blur") => void>;
 }

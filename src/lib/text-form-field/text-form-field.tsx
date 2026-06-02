@@ -54,20 +54,25 @@ export const TextFormField = component$<TextFormFieldProps>((props) => {
     }
   });
 
+  const getValue$ = $((): string => currentValue.value);
+  const setError$ = $((message: string | undefined) => {
+    localError.value = message;
+  });
+  const getTouched$ = $((): boolean => touched.value);
+  const setTouched$ = $((next: boolean) => {
+    touched.value = next;
+  });
+
   useVisibleTask$(async ({ cleanup }) => {
     if (!form) return;
 
     const unregister = await form.registerField$({
       name,
-      getValue: () => currentValue.value,
+      getValue$,
       validate$: validator$,
-      setError: (message) => {
-        localError.value = message;
-      },
-      getTouched: () => touched.value,
-      setTouched: (next) => {
-        touched.value = next;
-      },
+      setError$,
+      getTouched$,
+      setTouched$,
     });
 
     cleanup(unregister);
