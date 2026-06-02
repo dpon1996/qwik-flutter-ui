@@ -1,6 +1,6 @@
 # qwik-flutter-ui — Public API Design
 
-> **Status:** v1 layout + typography finalized. **v1.1** (§15–§21) specified — v1.1 open questions approved (§40). **v1.2** scrolling (§22–§24) specified — resolve open questions in §39 before implementation. **v1.25** `MediaQuery` specified (§25) — resolve open questions in §27 before implementation. **v1.3** forms **specified** (§28–§37). **v1.4** selection controls **specified** (§46–§56). **v1.5** theming **specified and implemented** (§57; decisions **T1–T6** in §43). **v1.6** form decoration **specified** (§58–§72; decisions **FD1–FD10** in §43).
+> **Status:** v1 layout + typography finalized. **v1.1** (§15–§21) specified — v1.1 open questions approved (§40). **v1.2** scrolling (§22–§24) specified — resolve open questions in §39 before implementation. **v1.25** `MediaQuery` specified (§25) — resolve open questions in §27 before implementation. **v1.3** forms **specified** (§28–§37). **v1.4** selection controls **specified** (§46–§56). **v1.5** theming **specified and implemented** (§57; decisions **T1–T6** in §43). **v1.6** form decoration **specified** (§58–§72; decisions **FD1–FD10** in §43). **v1.7** overlays **specified** (§73–§89; decisions **OV1–OV15** in §43).
 > **Goal:** A Flutter-inspired UI framework for Qwik. The API should feel as close to Flutter as possible while remaining idiomatic JSX.
 
 ---
@@ -89,6 +89,23 @@ Every API decision in this document is justified against these ten principles. W
 - §70 — v1.6 Flutter parity
 - §71 — v1.6 future roadmap
 - §72 — v1.6 final review
+- §73 — v1.7 Overlays — overview
+- §74 — `OverlayContainer` (public)
+- §75 — `OverlayPortal` (internal)
+- §76 — v1.7 shared types review
+- §77 — `Dialog`
+- §78 — `AlertDialog`
+- §79 — `ModalBottomSheet`
+- §80 — `SnackBar`
+- §81 — `Tooltip`
+- §82 — `Popover`
+- §83 — `Menu` / `MenuItem` / `MenuDivider`
+- §84 — v1.7 accessibility review
+- §85 — v1.7 SSR and resumability
+- §86 — v1.7 open questions (OV1–OV15)
+- §87 — v1.7 Flutter parity
+- §88 — v1.7 future roadmap
+- §89 — v1.7 final review
 - §38 — v1.2 scrolling — shared enums review
 - §39 — v1.2 Scrolling open questions
 - §40 — Open questions (v1.1, approval required)
@@ -316,7 +333,22 @@ src/
     │   └── …
     ├── checkbox-form-field/           // v1.6 — §62
     ├── dropdown-form-field/           // v1.6 — §63
-    └── radio-group-form-field/        // v1.6 — §64
+    ├── radio-group-form-field/        // v1.6 — §64
+    │
+    ├── overlay/                       // v1.7 — §74–§75 (portal internal)
+    │   ├── overlay-container.tsx
+    │   ├── overlay-portal.tsx         // NOT exported
+    │   ├── use-overlay-layer.ts       // NOT exported
+    │   ├── focus-trap.ts              // NOT exported
+    │   ├── types.ts
+    │   └── index.ts
+    ├── dialog/                        // v1.7 — §77
+    ├── alert-dialog/                  // v1.7 — §78
+    ├── modal-bottom-sheet/            // v1.7 — §79
+    ├── snack-bar/                     // v1.7 — §80
+    ├── tooltip/                       // v1.7 — §81
+    ├── popover/                       // v1.7 — §82
+    └── menu/                          // v1.7 — §83
 ```
 
 No `input-decoration/` widget folder — `InputDecoration` / `FieldDecoration` are types (§28, §58; Decision #78).
@@ -364,6 +396,14 @@ export {
   useTheme,
   createThemeData,
 } from "./lib/theme";
+export { OverlayContainer } from "./lib/overlay";
+export { Dialog } from "./lib/dialog";
+export { AlertDialog, AlertDialogTitle, AlertDialogContent, AlertDialogActions } from "./lib/alert-dialog";
+export { ModalBottomSheet } from "./lib/modal-bottom-sheet";
+export { SnackBar, SnackBarHost, enqueueSnackBar$ } from "./lib/snack-bar";
+export { Tooltip } from "./lib/tooltip";
+export { Popover } from "./lib/popover";
+export { Menu, MenuItem, MenuDivider } from "./lib/menu";
 
 // Prop types
 export type { RowProps } from "./lib/row";
@@ -910,6 +950,46 @@ export const InputMode = {
 ```
 
 **Used by:** `TextField.inputMode` (§29). Default: derive from `type` where sensible (e.g. `InputType.email` → `InputMode.email`).
+
+### 1.32 `OverlayPlacement` — `Popover` / `Tooltip` (v1.7)
+
+```ts
+export const OverlayPlacement = {
+  top:    "top",
+  bottom: "bottom",
+  start:  "start",
+  end:    "end",
+  center: "center",
+} as const;
+```
+
+**Used by:** `Popover.placement`, `Tooltip.placement` (§82, §81). Manual flip in v1.7 (OV10).
+
+### 1.33 `OverlayTrigger` — declarative triggers (v1.7)
+
+```ts
+export const OverlayTrigger = {
+  manual: "manual",
+  click:  "click",
+  hover:  "hover",
+  focus:  "focus",
+} as const;
+```
+
+**Used by:** `Popover`, `Tooltip` when trigger mode is exposed (§81–§82).
+
+### 1.34 `OverlayDismissReason` — `onOpenChange$` (v1.7)
+
+```ts
+export const OverlayDismissReason = {
+  escape:          "escape",
+  backdrop:        "backdrop",
+  outsidePointer:  "outsidePointer",
+  programmatic:    "programmatic",
+} as const;
+```
+
+**Used by:** `Dialog`, `ModalBottomSheet`, `Popover`, `Menu` `onOpenChange$` callbacks (§77–§83).
 
 ---
 
@@ -5528,6 +5608,564 @@ When both widget label props and decoration labels are provided:
 | SSR / resumability / a11y preserved (§67–§68) | Pass |
 ---
 
+## 73. v1.7 Overlays — overview
+
+### 73.1 Purpose
+
+- Flutter-style overlays for Qwik: dialogs, bottom sheets, snack bars, tooltips, popovers, menus.
+- Shared **overlay infrastructure** (`OverlayContainer`, internal portal/layer stack) so v2 widgets (DatePicker, ContextMenu) reuse the same host.
+- SSR-friendly, resumable open state, semantic HTML + ARIA, minimal runtime (Principles §1–§10).
+
+### 73.2 Architecture
+
+```mermaid
+flowchart TB
+  subgraph app [App tree]
+    ThemeProvider
+    Page[Page content]
+    OverlayContainer
+  end
+  subgraph portal [Overlay layer host]
+    Layer1[Dialog layer]
+    Layer2[Popover layer]
+    Layer3[SnackBar layer]
+  end
+  OverlayPortal1[OverlayPortal internal] --> Layer1
+  OverlayPortal2[OverlayPortal internal] --> Layer2
+  OverlayContainer --> portal
+```
+
+| Layer | Public (exported) | Internal (not exported) |
+| ----- | ----------------- | ------------------------ |
+| Host | `OverlayContainer` | Layer stack, `useOverlayLayer`, focus coordinator, auto-fallback host (OV13) |
+| Portal | — | `OverlayPortal`, DOM portal target, positioner |
+| Widgets | `Dialog`, `AlertDialog`, `ModalBottomSheet`, `SnackBar`, `SnackBarHost`, `enqueueSnackBar$`, `Tooltip`, `Popover`, `Menu`, `MenuItem`, `MenuDivider` | Compose via internal portal + dismiss/focus helpers |
+
+### 73.2.1 Public vs internal export policy (approved)
+
+| Symbol | Export from `src/index.ts` |
+| ------ | -------------------------- |
+| `OverlayContainer` | **Yes** — app root host; explicit placement recommended |
+| `OverlayPortal` | **No** — implementation detail (OV1, OV10) |
+| `Dialog`, `AlertDialog`, `ModalBottomSheet`, `Tooltip`, `Popover`, `Menu`, … | **Yes** |
+| `SnackBarHost`, `enqueueSnackBar$` | **Yes** (OV14) |
+| `useOverlayLayer`, focus-trap, internal positioner | **No** |
+| Shared animation engine / `OverlayTransition` | **No** (OV15) |
+
+**Rationale:** Flutter developers use `showDialog` / `ScaffoldMessenger.showSnackBar`, not raw portal layers. Keeping `OverlayPortal` internal preserves flexibility for portal DOM strategy, stacking, and positioning without semver surface on low-level primitives.
+
+### 73.3 v1.7 non-goals
+
+Explicitly **out of scope** for v1.7:
+
+#### Widgets / milestones (deferred)
+
+| Item | Status | Target |
+| ---- | ------ | ------ |
+| `ContextMenu` | Defer | v2+ |
+| `DropdownMenu` | Defer | v2+ |
+| `DatePicker` | Defer | v2+ |
+| `TimePicker` | Defer | v2+ |
+| `CommandPalette` | Defer | v2+ |
+| `Drawer` | Defer | **v1.8** App Structure |
+| `AppBar` | Defer | **v1.8** |
+| `BottomNavigationBar` | Defer | **v1.8** |
+| `NavigationRail` | Defer | **v1.9** Navigation |
+| `Tabs` / `TabBar` / `TabPanel` | Defer | **v1.9** |
+| `Link` / `Breadcrumb` | Defer | **v1.9** |
+
+#### Toast vs SnackBar (approved distinction)
+
+| Surface | v1.7 | Notes |
+| ------- | ---- | ----- |
+| **`SnackBar`** | **Ship** | Material-style transient message + optional action; `SnackBarHost` + `enqueueSnackBar$` (OV14) |
+| **`Toast`** | **Defer** | Separate product pattern (often multiple concurrent toasts, different positioning/dismiss rules). Do not alias SnackBar as Toast in v1.7. Revisit v2+ |
+
+#### ModalBottomSheet v2+ mechanics
+
+See **§79.2** — drag, snap, velocity, partial/persistent sheets, sheet controllers.
+
+#### Animation framework (OV15)
+
+| Item | Status | Notes |
+| ---- | ------ | ----- |
+| Shared overlay animation engine | **Reject v1.7** | No central transition coordinator in `overlay/` |
+| **Framer Motion** integration | **Reject** | External dependency; conflicts with Principle #7 |
+| **Motion One** / WAAPI wrapper layer | **Reject** | Same |
+| Public `OverlayTransition` / `AnimationController` | **Defer v2+** | Revisit if coordinated exit-before-unmount is needed |
+
+Widgets may use **CSS transitions/keyframes** in their own `.module.css` files only. Infrastructure unmounts layers on `open={false}` **without** waiting for animation callbacks in v1.7.
+
+---
+
+## 74. `OverlayContainer` (public)
+
+Root host for overlay layers. Place **once** inside `ThemeProvider` (OV11) near the app root.
+
+```tsx
+<ThemeProvider inherit={false} theme={{}}>
+  <OverlayContainer>
+  <SnackBarHost />
+  {children}
+  </OverlayContainer>
+</ThemeProvider>
+```
+
+### 74.1 Responsibilities
+
+| Concern | Owner |
+| ------- | ----- |
+| Layer stack / z-index | Central counter on container (OV2) |
+| Portal DOM host | `<div id="qfu-overlay-root" data-qfu-overlay-host>` in SSR (empty, inert) |
+| Focus trap (modal) | Topmost modal layer coordinator (OV3) |
+| Focus restore on close | Layer that opened stores `document.activeElement` |
+| Escape key | Topmost dismissible layer only |
+| Scroll lock | `document.body` `overflow: hidden` when any modal open (OV6) |
+| Nested modals | Allowed; monotonic z-index (OV7) |
+| SnackBar slot | Renders `SnackBarHost` children or default host region |
+
+### 74.2 Z-index
+
+- CSS variable: `--qfu-overlay-z-base` (e.g. `1000`) on theme / container.
+- Each pushed layer increments from base — callers do not pass arbitrary `zIndex` in v1.7.
+
+### 74.3 OV13 — Auto-create fallback
+
+If no `OverlayContainer` exists when an overlay opens or `enqueueSnackBar$` runs:
+
+- **Client:** singleton implicit container appended to `document.body` (`useVisibleTask$` only — **no SSR markup** for fallback).
+- **Dev:** one-time console warning recommending explicit container for SSR predictability and theme inheritance.
+
+Explicit container is **required for production SSR**; fallback is DX convenience only.
+
+### 74.4 Props (sketch)
+
+```ts
+export interface OverlayContainerProps extends BaseProps {
+  /** Base z-index for first layer. Default from theme or 1000. */
+  zIndexBase?: number;
+}
+```
+
+---
+
+## 75. `OverlayPortal` (internal)
+
+**Not exported** from `src/index.ts`. Used only by overlay widgets (`Dialog`, `Popover`, etc.).
+
+### 75.1 Responsibilities
+
+| Concern | Owner |
+| ------- | ----- |
+| Teleport open content into overlay host | `OverlayPortal` |
+| `open` / `defaultOpen` / controlled `onOpenChange$` | Per-widget + portal |
+| Anchor / fixed positioning | Internal positioner (OV10 manual flip) |
+| z-index assignment | From `OverlayContainer` layer push |
+
+### 75.2 OV1 — Portal DOM target
+
+- **SSR / default:** in-tree host under explicit `OverlayContainer` (hydration anchor).
+- **Optional (internal):** client reparent to `document.body` — not a public API.
+
+### 75.3 OV15 — Animation
+
+Portal **unmounts** when `open={false}` immediately in v1.7 — **not** animation-gated. Enter/exit motion is widget CSS only (§73.3).
+
+### 75.4 Open model
+
+- Default `open={false}` for SSR (no overlay in static HTML except inert host `div`).
+- Listeners (`keydown`, focus trap) only in `useVisibleTask$` while `open` (Principle #5).
+
+---
+
+## 76. v1.7 shared types review
+
+| Type / enum | Verdict | Reasoning |
+| ----------- | ------- | --------- |
+| `OverlayPlacement` | **Ship** | `top` \| `bottom` \| `start` \| `end` \| `center` — Popover, Tooltip (§1.32) |
+| `OverlayStrategy` | **Defer** | Implementation detail (fixed vs anchored) |
+| `OverlayTrigger` | **Ship** | `manual` \| `click` \| `hover` \| `focus` (§1.33) |
+| `OverlayDismissReason` | **Ship** | `escape` \| `backdrop` \| `outsidePointer` \| `programmatic` (§1.34) |
+| `OverlayRole` | **Reject** | Widget-specific ARIA, not a public enum |
+| `SnackBarDuration` | **Defer** | Use `number` ms; optional `short` / `long` presets in widget props only |
+
+New types in `src/lib/_shared/types.ts` (sketch):
+
+```ts
+export type OverlayDismissReason =
+  (typeof OverlayDismissReason)[keyof typeof OverlayDismissReason];
+
+export interface OverlayOpenChangeDetail {
+  open: boolean;
+  reason?: OverlayDismissReason;
+}
+```
+
+---
+
+## 77. `Dialog`
+
+Flutter: [`showDialog`](https://api.flutter.dev/flutter/material/showDialog.html) / [`Dialog`](https://api.flutter.dev/flutter/material/Dialog-class.html).
+
+### 77.1 v1.7 API
+
+**Declarative only** (OV4). Defer imperative `showDialog$(component$)` to **v1.8**.
+
+```ts
+export interface DialogProps extends BaseProps {
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange$?: QRL<(open: boolean, reason?: OverlayDismissReason) => void>;
+  modal?: boolean; // default true
+  dismissOnEscape?: boolean; // default true when modal
+  dismissOnBackdropClick?: boolean; // default true
+  restoreFocus?: boolean; // default true
+  labelledBy?: string; // optional; auto from title id
+}
+```
+
+### 77.2 Markup & ARIA
+
+- `role="dialog"`; `aria-modal="true"` when `modal={true}`.
+- Backdrop: sibling or pseudo-layer; pointer events dismiss when enabled.
+- Title: slotted heading with `id` wired to `aria-labelledby`.
+
+### 77.3 Animation (OV15)
+
+Optional fade via `dialog.module.css`. Infrastructure does not coordinate exit timing.
+
+### 77.4 SSR
+
+- `defaultOpen={true}` on modal: **dev warning** on server (OV12).
+- Closed dialog: no portal content in SSR HTML.
+
+---
+
+## 78. `AlertDialog`
+
+Built on `Dialog`. Always modal.
+
+### 78.1 Subcomponents (recommended)
+
+- `AlertDialog` — root
+- `AlertDialogTitle` — `id` for `aria-labelledby`
+- `AlertDialogContent`
+- `AlertDialogActions` — action buttons row
+
+### 78.2 `role`
+
+- Destructive / blocking confirm: `role="alertdialog"` when appropriate.
+- Informational: `role="dialog"` acceptable.
+
+---
+
+## 79. `ModalBottomSheet`
+
+Flutter: [`showModalBottomSheet`](https://api.flutter.dev/flutter/material/showModalBottomSheet.html).
+
+### 79.1 v1.7 scope (ship)
+
+| Topic | v1.7 |
+| ----- | ---- |
+| Panel | Bottom-anchored; backdrop; escape/backdrop dismiss; focus trap |
+| API | Declarative `<ModalBottomSheet>`; document `showModalBottomSheet$` name for parity — implement with Dialog imperative in v1.8 |
+| Responsive | Mobile: full-width; desktop: centered max-width (e.g. 560px) — not side drawer |
+
+```ts
+export interface ModalBottomSheetProps extends BaseProps {
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange$?: QRL<(open: boolean, reason?: OverlayDismissReason) => void>;
+  dismissOnEscape?: boolean;
+  dismissOnBackdropClick?: boolean;
+}
+```
+
+### 79.2 v2+ scope lock (do not ship in v1.7)
+
+| Deferred feature | Notes |
+| ---------------- | ----- |
+| Drag gestures | Pointer-driven vertical drag on handle |
+| Snap points | Half-height / full-height positions |
+| Velocity tracking | Fling-to-dismiss / snap physics |
+| Partial sheet states | Peek heights (e.g. 40% open) |
+| Persistent sheets | `DraggableScrollableSheet` class |
+| Sheet controllers | Imperative `SheetController` API |
+
+v1.7: **static** open/closed only — no `onDrag$`, `snapPoints`, `initialChildSize`.
+
+### 79.3 Animation (OV15)
+
+Optional slide-up via widget CSS; unmount on close without exit callback.
+
+---
+
+## 80. `SnackBar` (OV14 hybrid)
+
+Flutter: [`ScaffoldMessenger.showSnackBar`](https://api.flutter.dev/flutter/material/ScaffoldMessenger/showSnackBar.html).
+
+### 80.1 Architecture (approved)
+
+| Option | Verdict |
+| ------ | ------- |
+| (A) Imperative only | Reject — poor SSR |
+| (B) Declarative widget only | Acceptable; weak Flutter parity |
+| **(C) Hybrid** | **`SnackBarHost` + `enqueueSnackBar$`** |
+
+```tsx
+<OverlayContainer>
+  <SnackBarHost />
+  …
+</OverlayContainer>
+```
+
+```ts
+export interface SnackBarOptions {
+  message: string;
+  actionLabel?: string;
+  onAction$?: QRL<() => void>;
+  duration?: number; // ms; default ~4000
+}
+
+export const enqueueSnackBar$: QRL<(options: SnackBarOptions) => void>;
+```
+
+### 80.2 Queue behavior
+
+- Default: **one visible** snack at a time (queue or replace — document in implementation).
+- Position: bottom-center or bottom-start (theme).
+- `role="status"` default; `role="alert"` when `assertive` option added later.
+
+### 80.3 Declarative `SnackBar`
+
+Optional controlled `<SnackBar open message …>` for SSR demos; primary DX is `enqueueSnackBar$`.
+
+### 80.4 Animation (OV15)
+
+Slide/fade via `snack-bar.module.css`. Queue **duration** is widget timing, not infra transitions.
+
+---
+
+## 81. `Tooltip`
+
+Flutter: [`Tooltip`](https://api.flutter.dev/flutter/material/Tooltip-class.html).
+
+### 81.1 v1.7 (minimal)
+
+| Ship | Defer (v1.8+) |
+| ---- | ------------- |
+| Child wrapper + `content` | Touch long-press |
+| Hover + focus show (default) | Multi-monitor collision engine |
+| `delayDuration` default ~700ms | Follow-cursor |
+| Controlled `open` optional | Tap-to-toggle on touch |
+
+- `aria-describedby` links trigger to tooltip id.
+- Built on internal `OverlayPortal` + anchor placement (OV10).
+
+---
+
+## 82. `Popover`
+
+Non-modal by default. `aria-expanded` on trigger.
+
+### 82.1 vs `Dialog`
+
+| | `Dialog` | `Popover` |
+| - | -------- | --------- |
+| Modal | Yes (default) | No (default) |
+| Focus trap | Yes | No |
+| Backdrop | Yes | Optional scrim defer |
+| Dismiss | Escape + backdrop | Outside pointer; escape optional |
+
+### 82.2 Positioning
+
+- `placement?: OverlayPlacement` (§1.32).
+- Manual flip math v1.7; Floating UI **defer**.
+
+---
+
+## 83. `Menu` / `MenuItem` / `MenuDivider`
+
+`Menu` = `Popover` + list semantics.
+
+### 83.1 Components
+
+```ts
+export interface MenuProps extends BaseProps {
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange$?: QRL<(open: boolean, reason?: OverlayDismissReason) => void>;
+  trigger: JSX.Element; // or slot pattern per §0.1
+}
+
+export interface MenuItemProps extends BaseProps {
+  disabled?: boolean;
+  onSelect$?: QRL<() => void>;
+}
+
+export interface MenuDividerProps extends BaseProps {}
+```
+
+### 83.2 Keyboard
+
+- Roving `tabIndex` or `aria-activedescendant` on menu list.
+- Arrow keys, Home/End, typeahead defer v2.
+- `MenuDivider`: `role="separator"`.
+
+### 83.3 `PopupMenuButton`
+
+**Not shipped** as separate widget. Document pattern:
+
+```tsx
+<Button onClick$={() => (menuOpen.value = true)}>Open</Button>
+<Menu open={menuOpen.value} … />
+```
+
+---
+
+## 84. v1.7 accessibility review
+
+| Widget | Focus trap | Escape | Roles |
+| ------ | ---------- | ------ | ----- |
+| `Dialog` | Yes (modal) | Yes | `dialog`, `aria-modal` |
+| `AlertDialog` | Yes | Yes | `alertdialog` when appropriate |
+| `ModalBottomSheet` | Yes | Yes | `dialog` |
+| `Popover` | No | Optional | `aria-expanded` on trigger |
+| `Menu` | Focus inside menu while open | Yes closes | `menu` / `menuitem` |
+| `Tooltip` | No | N/A | `aria-describedby` |
+| `SnackBar` | No | Optional action | `status` / `alert` |
+
+- **Focus restore:** returning focus to trigger on close when `restoreFocus` (default true for modals).
+- **Nested modals (OV7):** only topmost receives escape; focus trap on topmost.
+- **`prefers-reduced-motion`:** per-widget CSS (OV15).
+
+---
+
+## 85. v1.7 SSR and resumability
+
+| Content | SSR | Client |
+| ------- | --- | ------ |
+| `OverlayContainer` host `div` | Empty inert anchor | Hydrated |
+| Closed overlays | No layer markup | — |
+| `open` signal | From props / `defaultOpen` | Resumed |
+| Focus trap / keydown | Not active | `useVisibleTask$` while open |
+| Fallback container (OV13) | Not rendered | Created on first open |
+| `enqueueSnackBar$` | No-op or queue until client | Runs after resume |
+
+- No `document` / `window` in render (Principle #4).
+- **Related (forms):** playground `Form` may need `preventdefault:submit` on `<form>` — separate from v1.7; optional cross-reference.
+
+---
+
+## 86. v1.7 open questions — resolved (OV1–OV15)
+
+All architecture questions for v1.7 are **closed**.
+
+| ID | Topic | Recommendation |
+| -- | ----- | -------------- |
+| **OV1** | Portal DOM target | **In-tree host** under `OverlayContainer`; optional internal client reparent to `document.body` |
+| **OV2** | Stacking | **Central counter** on `OverlayContainer` |
+| **OV3** | Focus trap | **Custom minimal** (no dependency) |
+| **OV4** | Dialog API | **Declarative v1.7**; defer `showDialog$` to v1.8 |
+| **OV5** | SnackBar model | **Superseded by OV14** |
+| **OV6** | Scroll lock | **`document.body` overflow hidden** when any modal open |
+| **OV7** | Nested modals | **Allow stack** with monotonic z-index |
+| **OV8** | Tooltip touch | **Defer** to v1.8+ |
+| **OV9** | Bottom sheet drag/snap | **Defer all** — §79.2 |
+| **OV10** | Positioning | **Manual flip v1.7**; CSS anchor positioning defer |
+| **OV11** | Theme placement | **`OverlayContainer` child of `ThemeProvider`** |
+| **OV12** | SSR `defaultOpen` | **Dev warning** if modal `defaultOpen={true}` on server |
+| **OV13** | Required container? | **(B) Auto-create fallback** + dev warning |
+| **OV14** | SnackBar | **(C) Hybrid:** `SnackBarHost` + `enqueueSnackBar$` |
+| **OV15** | Animations | **(B) Widget-owned** — see below |
+
+### OV13 — OverlayContainer required?
+
+**Recommendation: (B) Auto-create fallback**
+
+- Explicit container: preferred for production SSR + theme.
+- Fallback: client-only singleton at `document.body` end when missing.
+- Dev warning when fallback used.
+
+### OV14 — SnackBar architecture
+
+**Recommendation: (C) Hybrid** — `SnackBarHost` under `OverlayContainer` + `enqueueSnackBar$` for Flutter `showSnackBar` parity while keeping host in SSR tree.
+
+### OV15 — Shared animation primitives?
+
+**Recommendation: (B) Widget-owned animations**
+
+| Infrastructure owns | Widgets own |
+| ------------------- | ----------- |
+| Stacking / z-index | Enter animations |
+| Focus trap + restore | Exit animations |
+| Escape + backdrop routing | Duration / easing |
+| Anchor positioning | `prefers-reduced-motion` |
+
+Defer shared `OverlayTransition` to v2+.
+
+---
+
+## 87. v1.7 Flutter parity — intentional differences
+
+| Flutter | qwik-flutter-ui v1.7 |
+| ------- | -------------------- |
+| `showDialog(builder)` imperative | Declarative `<Dialog>`; imperative v1.8 |
+| `Navigator` overlay route | No router integration — app-owned `open` state |
+| `ScaffoldMessenger` | `SnackBarHost` + `enqueueSnackBar$` |
+| `OverlayPortal` widget | **Internal** — not exported |
+| `Material` motion specs | Per-widget CSS; no shared `AnimationController` |
+| `PopupMenuButton` | `Button` + `Menu` pattern doc |
+
+---
+
+## 88. v1.7 future roadmap
+
+### v1.7 — Overlays (this milestone)
+
+- `OverlayContainer` (public); `OverlayPortal` internal
+- `Dialog`, `AlertDialog`, `ModalBottomSheet`, `SnackBar`, `SnackBarHost`, `enqueueSnackBar$`, `Tooltip`, `Popover`, `Menu`, `MenuItem`, `MenuDivider`
+- Enums: `OverlayPlacement`, `OverlayTrigger`, `OverlayDismissReason`
+
+### v1.8 — App Structure
+
+- `AppBar`, `Drawer`, `BottomNavigationBar`, `AppShell`
+- `showDialog$` / `showModalBottomSheet$` (optional)
+
+### v1.9 — Navigation
+
+- `Link`, `Tabs`, `TabBar`, `TabPanel`, `Breadcrumb`, `NavigationRail`
+
+### v2+ overlays
+
+- `ContextMenu`, `DropdownMenu`, `DatePicker`, `TimePicker`, `CommandPalette`, `Toast`
+- Bottom sheet drag/snap (§79.2)
+- Shared `OverlayTransition` (if needed)
+- Tooltip touch / collision engine
+
+---
+
+## 89. Final review (v1.7 architecture)
+
+| Check | Status |
+| ----- | ------ |
+| **OV1–OV15** documented with recommendations | Pass (§86) |
+| **`OverlayPortal` internal / `OverlayContainer` public** | Pass (§73.2) |
+| **OV13** auto-fallback container | Pass |
+| **OV14** SnackBar hybrid | Pass |
+| **ModalBottomSheet** v2+ scope locked (§79.2) | Pass |
+| **Toast** deferred; **SnackBar** ships | Pass (§73.3) |
+| **OV15** widget-owned animations; no shared animation engine | Pass (§73.3, §86) |
+| Overlay architecture reusable (DatePicker, ContextMenu v2+) | Pass |
+| Accessibility (focus trap, restore, escape, roles) | Pass (§84) |
+| SSR (closed overlays, explicit host, fallback client-only) | Pass (§85) |
+| Resumability (signals + `useVisibleTask$` boundaries) | Pass |
+| **Roadmap** v1.7 / v1.8 / v1.9 structure | Pass (§88) |
+| Flutter-first naming | Pass (§87) |
+| No new Design Principles violations | Pass |
+
+---
+
 ## 38. v1.2 scrolling — shared enums review
 
 Candidates considered for v1.2. **None are added** to §1 unless listed below.
@@ -5955,6 +6593,14 @@ All review items resolved.
 | `RadioGroup` | many (`Radio`) | 1.4 | `<fieldset>`; owns state (#82); `string` in `FormValues` (§48). |
 | `Switch` | — | 1.4 | Same API as `Checkbox` (#81); `role="switch"` (§49). |
 | `Dropdown` | — | 1.4 | Native `<select>`; `DropdownOption[]`; `string` values (§50). |
+| `OverlayContainer` | one (slot) | 1.7 | Public overlay host; `OverlayPortal` internal (§74). OV13 auto-fallback. |
+| `Dialog` | one (slot) | 1.7 | Declarative only v1.7; `role="dialog"`; focus trap (§77, OV4). |
+| `AlertDialog` | slots | 1.7 | Built on `Dialog`; `alertdialog` when appropriate (§78). |
+| `ModalBottomSheet` | one (slot) | 1.7 | Static open/closed v1.7; drag/snap deferred §79.2 (OV9). |
+| `SnackBar` / `SnackBarHost` | — | 1.7 | Hybrid `enqueueSnackBar$` (OV14); not `Toast` (§80). |
+| `Tooltip` | child + content | 1.7 | Hover + focus; touch defer v1.8+ (OV8). |
+| `Popover` | trigger + content | 1.7 | Non-modal default; manual placement (OV10). |
+| `Menu` | items | 1.7 | `Popover` + menu semantics; no `PopupMenuButton` widget (§83). |
 
 ---
 
@@ -6067,6 +6713,21 @@ v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in 
 | **FD8** | **Export `FieldDecoration` publicly** (§66)                                                         | Used on all `*FormField` props. |
 | **FD9** | **`decoration.required` visual-only** (§58.4.1)                                                   | Native `required` on control widgets. |
 | **FD10** | **Label source precedence** (§65, §67)                                                              | `decoration.label` wins; dev warning; production renders decoration only. |
+| **OV1** | **Portal DOM target** (§75)                                                                         | In-tree host under `OverlayContainer`; optional internal client reparent to `document.body`. |
+| **OV2** | **Overlay z-index** (§74)                                                                            | Central counter on `OverlayContainer`; not per-portal arbitrary stacks. |
+| **OV3** | **Focus trap** (§74)                                                                                 | Custom minimal implementation; no third-party dependency. |
+| **OV4** | **Dialog API v1.7** (§77)                                                                             | Declarative `<Dialog>` only; defer `showDialog$` to v1.8. |
+| **OV5** | **SnackBar model** (§80)                                                                              | Superseded by **OV14**. |
+| **OV6** | **Scroll lock** (§74)                                                                                | `document.body` `overflow: hidden` when any modal open. |
+| **OV7** | **Nested modals** (§74, §84)                                                                          | Allow stack; escape + focus trap on topmost layer. |
+| **OV8** | **Tooltip touch** (§81)                                                                              | Defer long-press / tap-to-toggle to v1.8+. |
+| **OV9** | **ModalBottomSheet gestures** (§79.2)                                                                 | Defer drag, snap, velocity, partial/persistent sheets to v2+. |
+| **OV10** | **Positioning engine** (§82)                                                                         | Manual flip math v1.7; Floating UI defer. |
+| **OV11** | **`OverlayContainer` + theme** (§74)                                                                 | Child inside `ThemeProvider` for CSS variables. |
+| **OV12** | **SSR `defaultOpen`** (§77, §85)                                                                     | Dev warning if modal `defaultOpen={true}` on server. |
+| **OV13** | **Explicit `OverlayContainer`?** (§74)                                                               | **(B)** Auto-create fallback host on client + dev warning; explicit container preferred for SSR. |
+| **OV14** | **SnackBar architecture** (§80)                                                                      | **(C)** Hybrid: `SnackBarHost` + `enqueueSnackBar$`. |
+| **OV15** | **Overlay animations** (§73.3, §75)                                                                  | **(B)** Widget-owned CSS motion only; infra owns stacking, focus, dismissal, positioning — not enter/exit/timing; no Framer Motion / Motion One / shared animation engine in v1.7. |
 
 ---
 
@@ -6074,7 +6735,7 @@ v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in 
 
 ### Version roadmap summary
 
-Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§21; scrolling §22–§24; `MediaQuery` §25; **forms §28–§37**; **selection controls §46–§56**; **theming §57**; **form decoration §58–§72**.
+Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§21; scrolling §22–§24; `MediaQuery` §25; **forms §28–§37**; **selection controls §46–§56**; **theming §57**; **form decoration §58–§72**; **overlays §73–§89**.
 
 #### v1.0
 
@@ -6151,10 +6812,31 @@ Fully specified. Decisions **FD1–FD10** approved (§43). Architecture question
 - `RadioGroupFormField` (§64)
 - **Deferred v1.6:** public `FormField<T>`, `SwitchFormField`, `FieldState` / `useFieldState()` (§58.3, §60)
 
+#### v1.7 — Overlays (§73–§89)
+
+Fully specified. Decisions **OV1–OV15** approved (§43). Architecture questions **closed** (§86).
+
+- `OverlayContainer` (§74) — **public**; `OverlayPortal` **internal only** (§75)
+- `Dialog`, `AlertDialog` (§77–§78)
+- `ModalBottomSheet` (§79) — static open/closed; §79.2 gestures deferred
+- `SnackBar`, `SnackBarHost`, `enqueueSnackBar$` (§80, OV14)
+- `Tooltip`, `Popover`, `Menu`, `MenuItem`, `MenuDivider` (§81–§83)
+- Enums: `OverlayPlacement`, `OverlayTrigger`, `OverlayDismissReason` (§1.32–§1.34)
+- **Deferred v1.7:** `Toast`, shared overlay animation engine, `showDialog$` (v1.8), bottom-sheet drag/snap (v2+)
+
+#### v1.8 — App Structure
+
+- `AppBar`, `Drawer`, `BottomNavigationBar`, `AppShell`
+
+#### v1.9 — Navigation
+
+- `Link`, `Tabs`, `TabBar`, `TabPanel`, `Breadcrumb`, `NavigationRail`
+
 #### Future (v2+)
 - `SafeArea`, `ScrollController`, `PageView`, `CustomScrollView`, `SliverList`, `SliverGrid`, `Scrollbar` — §44
 - `Responsive<T>` — §44
-- Plus: `Link`, `IconButton`, animation primitives
+- Overlay widgets: `ContextMenu`, `DropdownMenu`, `DatePicker`, `TimePicker`, `CommandPalette`, `Toast` (§88)
+- Plus: `IconButton`, shared `OverlayTransition` (if needed)
 
 ---
 
@@ -6533,3 +7215,20 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 - [ ] FD10 label precedence + dev warnings (§65).
 - [ ] Export `FieldDecoration`, `CheckboxFormField`, `DropdownFormField`, `RadioGroupFormField` from `src/index.ts` (§0.10).
 - [ ] Playground form demo uses `*FormField` + `FieldDecoration`.
+
+### Phase 16 — v1.7 overlays
+
+> **Spec:** §73–§89. Decisions **OV1–OV15** approved (§43).
+
+- [ ] Extend `_shared/enums.ts` — `OverlayPlacement`, `OverlayTrigger`, `OverlayDismissReason` (§1.32–§1.34).
+- [ ] Extend `_shared/types.ts` — `OverlayDismissReason` type usage, overlay open-change types (§76).
+- [ ] `src/lib/overlay/` — `OverlayContainer` public; `overlay-portal`, `use-overlay-layer`, `focus-trap` **not exported** (§74–§75).
+- [ ] `src/lib/dialog/` — §77.
+- [ ] `src/lib/alert-dialog/` — §78.
+- [ ] `src/lib/modal-bottom-sheet/` — §79 (static sheet only).
+- [ ] `src/lib/snack-bar/` — `SnackBarHost`, `enqueueSnackBar$`, declarative `SnackBar` (§80).
+- [ ] `src/lib/tooltip/`, `popover/`, `menu/` — §81–§83.
+- [ ] OV13 fallback container + dev warning; OV12 SSR `defaultOpen` warning.
+- [ ] Export overlay widgets per §73.2.1 — **not** `OverlayPortal` (§0.10).
+- [ ] Playground overlay demos: Dialog, AlertDialog, bottom sheet, SnackBar enqueue, Tooltip, Menu, nested dialog (OV7).
+- [ ] `axe` on overlay screen (§84).
