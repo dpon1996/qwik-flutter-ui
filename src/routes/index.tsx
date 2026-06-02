@@ -12,7 +12,6 @@ import { RadioGroup } from "~/lib/radio-group";
 import { Switch } from "~/lib/switch";
 import { Text } from "~/lib/text";
 import { TextField } from "~/lib/text-field";
-import { ThemeProvider } from "~/lib/theme";
 
 const COUNTRIES = [
   { value: "us", label: "United States" },
@@ -28,9 +27,8 @@ export default component$(() => {
   });
 
   return (
-    <ThemeProvider inherit={false} theme={{}}>
-      <Container padding={24}>
-        <Column gap={24}>
+    <Container padding={24}>
+      <Column gap={24}>
         <Text as="h1">Selection controls + Form</Text>
 
         <Form onSubmit$={onFormSubmit}>
@@ -75,9 +73,8 @@ export default component$(() => {
             ? "Submit the form to see FormValues here."
             : submitResult.value}
         </Text>
-        </Column>
-      </Container>
-    </ThemeProvider>
+      </Column>
+    </Container>
   );
 });
 

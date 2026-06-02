@@ -22,7 +22,7 @@
 
 .requiredMark {
   margin-left: 0.125rem;
-  color: var(--qfu-color-error, #c62828);
+  color: #c62828;
 }
 
 .fieldRow {
@@ -30,17 +30,17 @@
   display: flex;
   align-items: stretch;
   width: 100%;
-  border: 1px solid var(--qfu-color-outline, #bdbdbd);
+  border: 1px solid #bdbdbd;
   border-radius: 0.25rem;
-  background-color: var(--qfu-color-surface, #fff);
+  background-color: #fff;
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 }
 
 .fieldRow:focus-within {
-  border-color: var(--qfu-color-primary, #1976d2);
-  box-shadow: 0 0 0 1px var(--qfu-color-primary, #1976d2);
+  border-color: #1976d2;
+  box-shadow: 0 0 0 1px #1976d2;
 }
 
 .fieldRowDisabled {
@@ -49,12 +49,12 @@
 }
 
 .fieldRowInvalid {
-  border-color: var(--qfu-color-error, #c62828);
+  border-color: #c62828;
 }
 
 .fieldRowInvalid:focus-within {
-  border-color: var(--qfu-color-error, #c62828);
-  box-shadow: 0 0 0 1px var(--qfu-color-error, #c62828);
+  border-color: #c62828;
+  box-shadow: 0 0 0 1px #c62828;
 }
 
 .prefix,
@@ -117,5 +117,5 @@
   display: block;
   font-size: 0.75rem;
   line-height: 1.33;
-  color: var(--qfu-color-error, #c62828);
+  color: #c62828;
 }
