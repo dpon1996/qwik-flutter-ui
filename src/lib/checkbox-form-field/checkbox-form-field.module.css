@@ -1,0 +1,11 @@
+/*
+ * CheckboxFormField — decoration chrome + control row (§62).
+ */
+
+.root {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}

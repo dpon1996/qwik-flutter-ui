@@ -13,7 +13,7 @@ export interface FormFieldRegistration {
   /** `string` (text, radio, dropdown) or `boolean` (checkbox, switch) — §53. */
   getValue$: QRL<() => FormFieldValue>;
   /** Text fields only; selection controls use native `required` (§53). */
-  validate$?: QRL<(value: string) => string | undefined>;
+  validate$?: QRL<(value: FormFieldValue) => string | undefined>;
   setError$: QRL<(message: string | undefined) => void>;
   getTouched$: QRL<() => boolean>;
   setTouched$: QRL<(touched: boolean) => void>;

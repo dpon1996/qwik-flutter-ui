@@ -54,7 +54,6 @@ async function runFieldValidator(
   value: FormFieldValue,
 ): Promise<string | undefined> {
   if (!field.validate$) return undefined;
-  if (typeof value !== "string") return undefined;
   return await field.validate$(value);
 }
 

@@ -22,4 +22,20 @@ export interface RadioGroupProps extends BaseProps {
   required?: boolean;
   /** Group label — renders `<legend>`. */
   legend?: string;
+  /**
+   * When `true`, inline `legend` is not rendered (`RadioGroupFormField` + FD10).
+   * @default false
+   */
+  omitLegend?: boolean;
+  /**
+   * When `true`, accessible name comes from the `legend` slot (`RadioGroupFormField`).
+   * @internal
+   */
+  legendProvidedViaSlot?: boolean;
+  /** When `false`, skips `<Form>` registration (`RadioGroupFormField` uses `useFormField`). */
+  registerWithForm?: boolean;
+  /** Overrides `aria-describedby` on the `<fieldset>`. */
+  ariaDescribedBy?: string;
+  /** Maps to `aria-invalid` on the `<fieldset>`. */
+  ariaInvalid?: boolean;
 }

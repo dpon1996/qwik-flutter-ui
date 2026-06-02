@@ -28,4 +28,22 @@ export interface DropdownProps extends BaseProps {
   placeholder?: string;
   /** Visible label; maps to `<label for={selectId}>`. */
   label?: string;
+  /**
+   * When `true`, inline `label` is not rendered (`DropdownFormField` + FD10).
+   * @default false
+   */
+  omitLabel?: boolean;
+  /**
+   * When `false`, renders only the control row (`DropdownFormField` composition).
+   * @default true
+   */
+  decorationChrome?: boolean;
+  /** When `false`, skips `<Form>` registration (`DropdownFormField` uses `useFormField`). */
+  registerWithForm?: boolean;
+  /** Overrides `aria-describedby` on the control (composition). */
+  ariaDescribedBy?: string;
+  /** Maps to `aria-invalid` on the control. */
+  ariaInvalid?: boolean;
+  /** Invalid border styling on the control row. */
+  invalid?: boolean;
 }

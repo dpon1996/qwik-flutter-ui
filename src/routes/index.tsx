@@ -2,13 +2,14 @@ import { $, component$, useSignal } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
 import type { FormValues } from "~/lib/_shared";
 import { Button } from "~/lib/button";
-import { Checkbox } from "~/lib/checkbox";
+import { CheckboxFormField } from "~/lib/checkbox-form-field";
 import { Column } from "~/lib/column";
 import { Container } from "~/lib/container";
 import { Dropdown } from "~/lib/dropdown";
+import { DropdownFormField } from "~/lib/dropdown-form-field";
 import { Form } from "~/lib/form";
 import { Radio } from "~/lib/radio";
-import { RadioGroup } from "~/lib/radio-group";
+import { RadioGroupFormField } from "~/lib/radio-group-form-field";
 import { Switch } from "~/lib/switch";
 import { Text } from "~/lib/text";
 import { TextField } from "~/lib/text-field";
@@ -37,35 +38,52 @@ export default component$(() => {
             <TextField name="name" decoration={{ label: "Name" }} required outlineColor="red" focusOutlineColor="black" />
 
 
-            <Checkbox
+            <CheckboxFormField
               name="terms"
-              label="I agree to the terms"
               required
               defaultChecked={true}
+              decoration={{
+                label: "I agree to the terms",
+                helperText: "You must accept to continue",
+              }}
+              validator$={(checked) =>
+                checked ? undefined : "Please accept the terms"
+              }
             />
             <Switch
               name="notifications"
               label="Push notifications"
               defaultChecked={true}
             />
-            <RadioGroup
+            <RadioGroupFormField
               name="plan"
-              legend="Billing plan"
               required
               defaultValue="free"
+              decoration={{
+                label: "Billing plan",
+                helperText: "Choose a billing plan",
+              }}
+              validator$={(v) => (v === "" ? "Please select a plan" : undefined)}
             >
               <Column gap={8}>
                 <Radio value="free" label="Free" />
                 <Radio value="pro" label="Pro" />
               </Column>
-            </RadioGroup>
-            <Dropdown
+            </RadioGroupFormField>
+            <Dropdown options={COUNTRIES} placeholder="Select a country" required defaultValue="us" />
+            <DropdownFormField
               name="country"
-              label="Country"
               placeholder="Select a country"
               required
               defaultValue="us"
               options={COUNTRIES}
+              decoration={{
+                label: "Country",
+                helperText: "Shipping address country",
+              }}
+              validator$={(v) =>
+                v === "" ? "Please select a country" : undefined
+              }
             />
             <Button type="submit">Submit</Button>
           </Column>

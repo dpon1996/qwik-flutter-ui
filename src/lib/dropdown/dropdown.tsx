@@ -33,6 +33,12 @@ export const Dropdown = component$<DropdownProps>((props) => {
     name,
     placeholder,
     label,
+    omitLabel = false,
+    decorationChrome = true,
+    registerWithForm = true,
+    ariaDescribedBy,
+    ariaInvalid,
+    invalid = false,
     id,
     class: className,
     style: userStyle,
@@ -68,7 +74,7 @@ export const Dropdown = component$<DropdownProps>((props) => {
   });
 
   useTask$(async ({ cleanup }) => {
-    if (!form || !name) return;
+    if (!registerWithForm || !form || !name) return;
 
     const unregister = await form.registerField$({
       name,
@@ -99,6 +105,7 @@ export const Dropdown = component$<DropdownProps>((props) => {
   const fieldRowClasses = [
     styles.fieldRow,
     disabled ? styles.fieldRowDisabled : undefined,
+    invalid ? styles.fieldRowInvalid : undefined,
   ]
     .filter(Boolean)
     .join(" ");
@@ -114,7 +121,7 @@ export const Dropdown = component$<DropdownProps>((props) => {
     touched.value = true;
     void onChange$?.(next, ev);
 
-    if (form && name) {
+    if (registerWithForm && form && name) {
       void form.onFieldInteraction$(name, "input");
     }
   });
@@ -122,9 +129,47 @@ export const Dropdown = component$<DropdownProps>((props) => {
   const showPlaceholder =
     placeholder !== undefined && placeholder !== "";
 
+  const selectControl = (
+    <select
+      {...rest}
+      {...selectBinding}
+      id={selectId}
+      name={name}
+      class={styles.select}
+      disabled={disabled || undefined}
+      required={required || undefined}
+      aria-describedby={ariaDescribedBy || undefined}
+      aria-invalid={ariaInvalid ? true : undefined}
+      onChange$={handleChange}
+    >
+      {showPlaceholder && (
+        <option value="" disabled hidden>
+          {placeholder}
+        </option>
+      )}
+      {options.map((option) => (
+        <option
+          key={option.value}
+          value={option.value}
+          disabled={option.disabled || undefined}
+        >
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+
+  const fieldRow = (
+    <div class={fieldRowClasses}>{selectControl}</div>
+  );
+
+  if (!decorationChrome) {
+    return fieldRow;
+  }
+
   return (
     <div class={rootClasses} style={rootStyle}>
-      {label !== undefined && label !== "" && (
+      {!omitLabel && label !== undefined && label !== "" && (
         <label class={styles.label} for={selectId}>
           {label}
           {required && (
@@ -136,33 +181,7 @@ export const Dropdown = component$<DropdownProps>((props) => {
         </label>
       )}
 
-      <div class={fieldRowClasses}>
-        <select
-          {...rest}
-          {...selectBinding}
-          id={selectId}
-          name={name}
-          class={styles.select}
-          disabled={disabled || undefined}
-          required={required || undefined}
-          onChange$={handleChange}
-        >
-          {showPlaceholder && (
-            <option value="" disabled hidden>
-              {placeholder}
-            </option>
-          )}
-          {options.map((option) => (
-            <option
-              key={option.value}
-              value={option.value}
-              disabled={option.disabled || undefined}
-            >
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {fieldRow}
     </div>
   );
 });

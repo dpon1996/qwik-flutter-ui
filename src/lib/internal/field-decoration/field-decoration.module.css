@@ -1,0 +1,45 @@
+/*
+ * Shared field decoration chrome (§59) — label, helper, error.
+ * Control chrome (border, input) stays on widget modules.
+ */
+
+.legend {
+  box-sizing: border-box;
+  display: block;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: inherit;
+}
+
+.label {
+  display: block;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: inherit;
+  cursor: pointer;
+}
+
+.requiredMark {
+  margin-left: 0.125rem;
+  color: var(--qfu-input-required-color, #c62828);
+}
+
+.helper {
+  display: block;
+  font-size: 0.75rem;
+  line-height: 1.33;
+  color: #616161;
+}
+
+.error {
+  display: block;
+  font-size: 0.75rem;
+  line-height: 1.33;
+  color: #c62828;
+}

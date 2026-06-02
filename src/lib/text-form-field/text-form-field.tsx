@@ -1,34 +1,37 @@
 /**
  * `TextFormField` — `TextField` with optional `Form` integration and `validator$`.
- * Flutter equivalent of `TextFormField`. See `docs/API_DESIGN.md` §30.
+ * Flutter equivalent of `TextFormField`. See `docs/API_DESIGN.md` §30, §61.
  *
- * - Composes {@link TextField} — no duplicated markup.
- * - Registers with {@link FormContext} when inside `<Form>` (§31).
- * - Standalone: runs `validator$` per `AutovalidateMode.onUserInteraction` (§34 F6).
+ * Architecture:
+ * - {@link useFormField} — registration, validation, error merge (FD3)
+ * - `field-decoration` — label, helper, error, `aria-describedby`
+ * - {@link TextField} — control chrome only (`decorationChrome={false}`)
  */
 
 import {
   $,
   component$,
-  useContext,
+  useId,
   useSignal,
   useVisibleTask$,
+  type QRL,
 } from "@builder.io/qwik";
 
-import { AutovalidateMode } from "../_shared";
-import { FormContext } from "../form/context";
+import type { FormFieldValue } from "../_shared";
+import {
+  buildAriaDescribedBy,
+  FieldDecorationError,
+  FieldDecorationHelper,
+  FieldDecorationLabel,
+} from "../internal/field-decoration";
+import { useFormField } from "../internal/use-form-field";
+import { pickControlDecoration } from "../text-field/pick-control-decoration";
+import { resolveTextFieldChrome } from "../text-field/resolve-text-field-chrome";
 import { TextField } from "../text-field/text-field";
+import styles from "../text-field/text-field.module.css";
+import { useTheme } from "../theme";
 
 import type { TextFormFieldProps } from "./types";
-
-function shouldValidateOnInput(
-  mode: AutovalidateMode,
-  touched: boolean,
-): boolean {
-  if (mode === AutovalidateMode.disabled) return false;
-  if (mode === AutovalidateMode.always) return true;
-  return touched;
-}
 
 export const TextFormField = component$<TextFormFieldProps>((props) => {
   const {
@@ -38,14 +41,16 @@ export const TextFormField = component$<TextFormFieldProps>((props) => {
     value,
     defaultValue,
     onInput$,
+    required = false,
+    id,
+    class: className,
     ...textFieldProps
   } = props;
 
-  const form = useContext(FormContext, null);
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
 
   const currentValue = useSignal(value ?? defaultValue ?? "");
-  const localError = useSignal<string | undefined>(undefined);
-  const touched = useSignal(false);
 
   useVisibleTask$(({ track }) => {
     track(() => value);
@@ -55,82 +60,87 @@ export const TextFormField = component$<TextFormFieldProps>((props) => {
   });
 
   const getValue$ = $((): string => currentValue.value);
-  const setError$ = $((message: string | undefined) => {
-    localError.value = message;
-  });
-  const getTouched$ = $((): boolean => touched.value);
-  const setTouched$ = $((next: boolean) => {
-    touched.value = next;
-  });
 
-  useVisibleTask$(async ({ cleanup }) => {
-    if (!form) return;
-
-    const unregister = await form.registerField$({
-      name,
-      getValue$,
-      validate$: validator$,
-      setError$,
-      getTouched$,
-      setTouched$,
-    });
-
-    cleanup(unregister);
+  const {
+    displayError,
+    mergedDecoration,
+    notifyInteraction$,
+  } = useFormField({
+    name,
+    validator$: validator$ as
+      | QRL<(value: FormFieldValue) => string | undefined>
+      | undefined,
+    decoration,
+    getValue$,
   });
 
-  const runValidate = $(async (val: string) => {
-    if (!validator$) {
-      localError.value = undefined;
-      return;
-    }
-    localError.value = await validator$(val);
-  });
+  const { colorScheme, inputDecorationTheme } = useTheme();
+
+  const chrome = resolveTextFieldChrome(
+    {
+      ...textFieldProps,
+      decoration,
+      required,
+      style: textFieldProps.style,
+    },
+    inputId,
+    colorScheme,
+    inputDecorationTheme,
+  );
+
+  const hasError = Boolean(displayError);
+  const ariaDescribedBy = buildAriaDescribedBy(
+    mergedDecoration,
+    chrome.helperId,
+    chrome.errorId,
+    hasError,
+  );
+
+  const controlDecoration = pickControlDecoration(decoration);
 
   const handleInput = $((val: string, ev: InputEvent) => {
     currentValue.value = val;
-    form?.setFieldValue$(name, val);
-
-    const wasTouched = touched.value;
     void onInput$?.(val, ev);
-
-    if (form) {
-      // Form owns touched + validation timing (§34 F6).
-      form.onFieldInteraction$(name, "input");
-      return;
-    }
-
-    if (!wasTouched) {
-      touched.value = true;
-    }
-
-    if (!validator$) return;
-
-    if (shouldValidateOnInput(AutovalidateMode.onUserInteraction, wasTouched)) {
-      void runValidate(val);
-    }
+    void notifyInteraction$(val, "input");
   });
 
-  const displayError =
-    localError.value !== undefined && localError.value !== ""
-      ? localError.value
-      : decoration?.errorText;
-
-  const mergedDecoration =
-    decoration !== undefined || displayError !== undefined
-      ? {
-          ...decoration,
-          ...(displayError !== undefined ? { errorText: displayError } : {}),
-        }
-      : undefined;
+  const rootClasses = [styles.root, className].filter(Boolean).join(" ");
 
   return (
-    <TextField
-      {...textFieldProps}
-      name={name}
-      decoration={mergedDecoration}
-      value={value}
-      defaultValue={defaultValue}
-      onInput$={handleInput}
-    />
+    <div class={rootClasses} style={chrome.rootStyle}>
+      <FieldDecorationLabel
+        decoration={mergedDecoration}
+        controlId={inputId}
+        labelStyle={chrome.labelStyle}
+        requiredMarkStyle={chrome.requiredMarkStyle}
+        showRequiredIndicator={mergedDecoration?.required === true}
+      />
+
+      <TextField
+        {...textFieldProps}
+        id={inputId}
+        name={name}
+        required={required}
+        decoration={controlDecoration}
+        decorationChrome={false}
+        ariaDescribedBy={ariaDescribedBy}
+        invalid={hasError}
+        value={value}
+        defaultValue={defaultValue}
+        onInput$={handleInput}
+      />
+
+      <FieldDecorationHelper
+        decoration={mergedDecoration}
+        helperId={chrome.helperId}
+        helperStyle={chrome.helperStyle}
+      />
+
+      <FieldDecorationError
+        errorText={displayError}
+        errorId={chrome.errorId}
+        errorStyle={chrome.errorStyle}
+      />
+    </div>
   );
 });

@@ -54,4 +54,13 @@ export interface TextFieldProps
   maxLines?: number;
   minLines?: number;
   autoComplete?: string;
+  /**
+   * When `false`, label / helper / error chrome is omitted (composed by `TextFormField`).
+   * @default true
+   */
+  decorationChrome?: boolean;
+  /** Overrides `aria-describedby` derived from `decoration` (composition). */
+  ariaDescribedBy?: string;
+  /** Invalid state when error chrome is rendered outside `TextField`. */
+  invalid?: boolean;
 }

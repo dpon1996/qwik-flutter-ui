@@ -194,25 +194,34 @@ export interface InteractiveProps {
 }
 
 /* ----------------------------------------------------------------- */
-/* Forms (v1.3 — §28 InputDecoration, §31 Form)                       */
+/* Forms (v1.3 — §28; v1.6 — §58 FieldDecoration)                     */
 /* ----------------------------------------------------------------- */
 
 /**
- * Configuration for text field label, placeholder, helper, error, and
- * adornments. Not a widget — composed by `TextField` / `TextFormField`.
- * See `docs/API_DESIGN.md` §28.
+ * Shared label / helper / error chrome for form fields (§58).
+ * Not a widget — used by `*FormField` wrappers and extended by `InputDecoration`.
  */
-export interface InputDecoration {
-  /** Visible label; maps to `<label for={inputId}>`. Flutter: `labelText`. */
+export interface FieldDecoration {
+  /** Visible label; maps to `<label for={controlId}>` or `<legend>`. */
   label?: string;
+  /** Helper copy; linked via `aria-describedby`. */
+  helperText?: string;
+  /** Error message when invalid. */
+  errorText?: string;
+  /**
+   * Visual required indicator (`*`) in decoration chrome only (FD9).
+   * Does not set native `required` — use the control widget's `required` prop.
+   */
+  required?: boolean;
+}
+
+/**
+ * Text field decoration — extends {@link FieldDecoration} with text-only fields.
+ * Not a widget — composed by `TextField` / `TextFormField`. See `docs/API_DESIGN.md` §28.
+ */
+export interface InputDecoration extends FieldDecoration {
   /** Native placeholder. Flutter: `hintText`. */
   placeholder?: string;
-  /** Helper copy; linked via `aria-describedby`. Flutter: `helperText`. */
-  helperText?: string;
-  /** Error message when invalid. Flutter: `errorText`. */
-  errorText?: string;
-  /** Visual required indicator; pairs with `required` on the control. */
-  required?: boolean;
   /** Leading adornment — string or slotted content. */
   prefix?: string;
   /** Trailing adornment — string or slotted content. */
@@ -229,9 +238,12 @@ export type FormValues = Record<string, unknown>;
  */
 export type FormFieldValue = string | boolean;
 
-/** Per-field validator; returns an error message or `undefined` when valid. */
-export type FormFieldValidator<T = unknown> = (
-  value: T,
+/**
+ * Per-field validator; returns an error message or `undefined` when valid (§58.6, FD6).
+ * v1.6 supports `string` and `boolean` via {@link FormFieldValue} only.
+ */
+export type FormFieldValidator = (
+  value: FormFieldValue,
 ) => string | undefined;
 
 /* ----------------------------------------------------------------- */

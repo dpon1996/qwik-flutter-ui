@@ -29,10 +29,12 @@ function hasAccessibleName(
   legend: string | undefined,
   ariaLabel: string | undefined,
   ariaLabelledBy: string | undefined,
+  legendProvidedViaSlot: boolean,
 ): boolean {
   if (legend !== undefined && legend !== "") return true;
   if (ariaLabel !== undefined && ariaLabel !== "") return true;
   if (ariaLabelledBy !== undefined && ariaLabelledBy !== "") return true;
+  if (legendProvidedViaSlot) return true;
   return false;
 }
 
@@ -45,6 +47,11 @@ export const RadioGroup = component$<RadioGroupProps>((props) => {
     disabled = false,
     required = false,
     legend,
+    omitLegend = false,
+    legendProvidedViaSlot = false,
+    registerWithForm = true,
+    ariaDescribedBy,
+    ariaInvalid,
     id,
     class: className,
     style: userStyle,
@@ -64,7 +71,14 @@ export const RadioGroup = component$<RadioGroupProps>((props) => {
         "[RadioGroup] Do not pass both `value` and `defaultValue`; use controlled or uncontrolled mode.",
       );
     }
-    if (!hasAccessibleName(legend, ariaLabel, ariaLabelledBy)) {
+    if (
+      !hasAccessibleName(
+        legend,
+        ariaLabel,
+        ariaLabelledBy,
+        legendProvidedViaSlot,
+      )
+    ) {
       console.warn(
         "[RadioGroup] Accessible name required: provide `legend`, `aria-label`, or `aria-labelledby`.",
       );
@@ -86,7 +100,7 @@ export const RadioGroup = component$<RadioGroupProps>((props) => {
     }
     touched.value = true;
     void onChange$?.(next, ev);
-    if (form) {
+    if (registerWithForm && form) {
       void form.onFieldInteraction$(name, "input");
     }
   });
@@ -110,7 +124,7 @@ export const RadioGroup = component$<RadioGroupProps>((props) => {
   });
 
   useTask$(async ({ cleanup }) => {
-    if (!form) return;
+    if (!registerWithForm || !form) return;
 
     const unregister = await form.registerField$({
       name,
@@ -138,10 +152,13 @@ export const RadioGroup = component$<RadioGroupProps>((props) => {
       class={fieldsetClasses}
       style={fieldsetStyle}
       disabled={disabled || undefined}
+      aria-describedby={ariaDescribedBy || undefined}
+      aria-invalid={ariaInvalid ? true : undefined}
     >
-      {legend !== undefined && legend !== "" && (
+      {!omitLegend && legend !== undefined && legend !== "" && (
         <legend class={styles.legend}>{legend}</legend>
       )}
+      <Slot name="legend" />
       <Slot />
     </fieldset>
   );

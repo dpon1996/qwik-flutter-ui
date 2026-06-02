@@ -28,4 +28,15 @@ export interface CheckboxProps extends BaseProps {
   autoFocus?: boolean;
   /** Visible label; maps to `<label for={inputId}>`. */
   label?: string;
+  /**
+   * When `true`, inline `label` is not rendered (`CheckboxFormField` + FD10).
+   * @default false
+   */
+  omitLabel?: boolean;
+  /** When `false`, skips `<Form>` registration (`CheckboxFormField` uses `useFormField`). */
+  registerWithForm?: boolean;
+  /** Overrides `aria-describedby` on the control (composition). */
+  ariaDescribedBy?: string;
+  /** Maps to `aria-invalid` on the control. */
+  ariaInvalid?: boolean;
 }

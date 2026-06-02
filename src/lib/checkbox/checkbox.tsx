@@ -34,6 +34,10 @@ export const Checkbox = component$<CheckboxProps>((props) => {
     value = "on",
     autoFocus = false,
     label,
+    omitLabel = false,
+    registerWithForm = true,
+    ariaDescribedBy,
+    ariaInvalid,
     id,
     class: className,
     style: userStyle,
@@ -57,7 +61,7 @@ export const Checkbox = component$<CheckboxProps>((props) => {
   });
 
   useTask$(async ({ cleanup }) => {
-    if (!form || !name) return;
+    if (!registerWithForm || !form || !name) return;
 
     const unregister = await form.registerField$({
       name,
@@ -112,9 +116,11 @@ export const Checkbox = component$<CheckboxProps>((props) => {
           disabled={disabled || undefined}
           required={required || undefined}
           autoFocus={autoFocus || undefined}
+          aria-describedby={ariaDescribedBy || undefined}
+          aria-invalid={ariaInvalid ? true : undefined}
           onChange$={handleChange}
         />
-        {label !== undefined && label !== "" && (
+        {!omitLabel && label !== undefined && label !== "" && (
           <label class={styles.label} for={inputId}>
             {label}
             {required && (

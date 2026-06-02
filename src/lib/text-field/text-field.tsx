@@ -11,18 +11,26 @@
  *  - `useTheme().inputDecorationTheme` supplies decoration defaults when style
  *    props are omitted (§57); explicit props override theme (§0.6).
  *  - Outline / focus / placeholder use CSS variables on `.root` for SSR.
+ *  - Label / helper / error chrome via internal `field-decoration` (§59).
  */
 
 import { $, component$, useId, type CSSProperties } from "@builder.io/qwik";
 
 import { InputMode, InputType } from "../_shared";
 import { toBorderRadiusString, toEdgeInsetsString } from "../_shared/internal";
+import {
+  buildAriaDescribedBy,
+  FieldDecorationError,
+  FieldDecorationHelper,
+  FieldDecorationLabel,
+} from "../internal/field-decoration";
 import { useTheme } from "../theme";
 
 import {
   resolvedStylesToCssVars,
   resolveInputDecorationStyles,
 } from "./resolve-input-decoration-theme";
+import { resolveTextFieldChrome } from "./resolve-text-field-chrome";
 import styles from "./text-field.module.css";
 import type { TextFieldProps } from "./types";
 
@@ -66,6 +74,9 @@ export const TextField = component$<TextFieldProps>((props) => {
     borderRadius,
     padding,
     requiredIndicatorColor,
+    decorationChrome = true,
+    ariaDescribedBy,
+    invalid,
     name,
     value,
     defaultValue,
@@ -89,20 +100,41 @@ export const TextField = component$<TextFieldProps>((props) => {
 
   const generatedId = useId();
   const inputId = id ?? generatedId;
-  const helperId = `${inputId}-helper`;
-  const errorId = `${inputId}-error`;
 
   const errorText = decoration?.errorText;
-  const hasError = Boolean(errorText);
-  const isRequired = required || Boolean(decoration?.required);
+  const hasError = invalid ?? Boolean(errorText);
   const isMultiline = maxLines > 1;
 
-  const describedByIds = [
-    decoration?.helperText ? helperId : undefined,
-    hasError ? errorId : undefined,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const { colorScheme, inputDecorationTheme } = useTheme();
+
+  const chrome = resolveTextFieldChrome(
+    {
+      decoration,
+      required,
+      labelColor,
+      helperColor,
+      errorColor,
+      placeholderColor,
+      outlineColor,
+      focusOutlineColor,
+      borderRadius,
+      padding,
+      requiredIndicatorColor,
+      style: userStyle,
+    },
+    inputId,
+    colorScheme,
+    inputDecorationTheme,
+  );
+
+  const describedBy =
+    ariaDescribedBy ??
+    buildAriaDescribedBy(
+      decoration,
+      chrome.helperId,
+      chrome.errorId,
+      hasError,
+    );
 
   const resolvedInputMode = inputMode ?? deriveInputMode(type);
 
@@ -130,7 +162,6 @@ export const TextField = component$<TextFieldProps>((props) => {
 
   const rootClasses = [styles.root, className].filter(Boolean).join(" ");
 
-  const { colorScheme, inputDecorationTheme } = useTheme();
   const resolved = resolveInputDecorationStyles(
     {
       labelColor,
@@ -146,24 +177,6 @@ export const TextField = component$<TextFieldProps>((props) => {
     inputDecorationTheme,
     colorScheme,
   );
-
-  const rootStyle: CSSProperties = {
-    ...resolvedStylesToCssVars(resolved),
-    ...(userStyle as CSSProperties | undefined),
-  };
-
-  const labelStyle: CSSProperties | undefined =
-    resolved.labelColor !== undefined ? { color: resolved.labelColor } : undefined;
-
-  const helperStyle: CSSProperties | undefined =
-    resolved.helperColor !== undefined ? { color: resolved.helperColor } : undefined;
-
-  const errorStyle: CSSProperties = { color: resolved.errorColor };
-
-  const requiredMarkStyle: CSSProperties | undefined =
-    resolved.requiredIndicatorColor !== undefined
-      ? { color: resolved.requiredIndicatorColor }
-      : undefined;
 
   const fieldRowStyle: CSSProperties = {};
   if (resolved.borderRadius !== undefined) {
@@ -189,15 +202,15 @@ export const TextField = component$<TextFieldProps>((props) => {
     style: Object.keys(controlStyle).length > 0 ? controlStyle : undefined,
     disabled,
     readOnly,
-    required: isRequired || undefined,
+    required: chrome.isRequired || undefined,
     autoFocus: autoFocus || undefined,
     maxLength,
     minLength,
     autoComplete,
     placeholder: decoration?.placeholder,
     "aria-invalid": hasError ? true : undefined,
-    "aria-required": isRequired ? true : undefined,
-    "aria-describedby": describedByIds || undefined,
+    "aria-required": chrome.isRequired ? true : undefined,
+    "aria-describedby": describedBy || undefined,
     ...(resolvedInputMode !== undefined
       ? { inputMode: resolvedInputMode }
       : {}),
@@ -206,57 +219,56 @@ export const TextField = component$<TextFieldProps>((props) => {
     ...(handleInput !== undefined ? { onInput$: handleInput } : {}),
   };
 
+  const fieldRow = (
+    <div
+      class={fieldRowClasses}
+      style={Object.keys(fieldRowStyle).length > 0 ? fieldRowStyle : undefined}
+    >
+      {decoration?.prefix !== undefined && decoration.prefix !== "" && (
+        <span class={styles.prefix}>{decoration.prefix}</span>
+      )}
+
+      {isMultiline ? (
+        <textarea
+          {...sharedControlProps}
+          rows={deriveTextareaRows(maxLines, minLines)}
+        />
+      ) : (
+        <input {...sharedControlProps} type={type} />
+      )}
+
+      {decoration?.suffix !== undefined && decoration.suffix !== "" && (
+        <span class={styles.suffix}>{decoration.suffix}</span>
+      )}
+    </div>
+  );
+
+  if (!decorationChrome) {
+    return fieldRow;
+  }
+
   return (
-    <div class={rootClasses} style={rootStyle}>
-      {decoration?.label !== undefined && decoration.label !== "" && (
-        <label class={styles.label} style={labelStyle} for={inputId}>
-          {decoration.label}
-          {isRequired && (
-            <span
-              class={styles.requiredMark}
-              style={requiredMarkStyle}
-              aria-hidden="true"
-            >
-              {" "}
-              *
-            </span>
-          )}
-        </label>
-      )}
+    <div class={rootClasses} style={chrome.rootStyle}>
+      <FieldDecorationLabel
+        decoration={decoration}
+        controlId={inputId}
+        labelStyle={chrome.labelStyle}
+        requiredMarkStyle={chrome.requiredMarkStyle}
+      />
 
-      <div
-        class={fieldRowClasses}
-        style={Object.keys(fieldRowStyle).length > 0 ? fieldRowStyle : undefined}
-      >
-        {decoration?.prefix !== undefined && decoration.prefix !== "" && (
-          <span class={styles.prefix}>{decoration.prefix}</span>
-        )}
+      {fieldRow}
 
-        {isMultiline ? (
-          <textarea
-            {...sharedControlProps}
-            rows={deriveTextareaRows(maxLines, minLines)}
-          />
-        ) : (
-          <input {...sharedControlProps} type={type} />
-        )}
+      <FieldDecorationHelper
+        decoration={decoration}
+        helperId={chrome.helperId}
+        helperStyle={chrome.helperStyle}
+      />
 
-        {decoration?.suffix !== undefined && decoration.suffix !== "" && (
-          <span class={styles.suffix}>{decoration.suffix}</span>
-        )}
-      </div>
-
-      {decoration?.helperText !== undefined && decoration.helperText !== "" && (
-        <span id={helperId} class={styles.helper} style={helperStyle}>
-          {decoration.helperText}
-        </span>
-      )}
-
-      {hasError && (
-        <span id={errorId} class={styles.error} style={errorStyle} role="alert">
-          {errorText}
-        </span>
-      )}
+      <FieldDecorationError
+        errorText={errorText}
+        errorId={chrome.errorId}
+        errorStyle={chrome.errorStyle}
+      />
     </div>
   );
 });
