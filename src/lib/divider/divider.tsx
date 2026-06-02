@@ -17,12 +17,11 @@ import { component$, type CSSProperties } from "@builder.io/qwik";
 
 import { Axis } from "../_shared";
 import { toLength } from "../_shared/internal";
+import { THEME_COLOR } from "../theme/css-vars";
 
 import styles from "./divider.module.css";
 import type { Length } from "../_shared";
 import type { DividerProps } from "./types";
-
-const DEFAULT_COLOR = "#e0e0e0";
 
 /**
  * Horizontal line styles for `<hr>`. Uses `border-top` when `size` and
@@ -79,7 +78,7 @@ export const Divider = component$<DividerProps>((props) => {
     size = 16,
     indent = 0,
     endIndent = 0,
-    color = DEFAULT_COLOR,
+    color = THEME_COLOR.outline,
     class: className,
     style: userStyle,
     ...rest

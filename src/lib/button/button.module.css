@@ -33,7 +33,7 @@
 }
 
 .button:focus-visible {
-  outline: 2px solid #1976d2;
+  outline: 2px solid var(--qfu-color-primary, #1976d2);
   outline-offset: 2px;
 }
 
@@ -47,38 +47,46 @@
 /* ---- variants (ButtonVariant) ---- */
 
 .variant-filled {
-  color: #fff;
-  background-color: #1976d2;
+  color: var(--qfu-color-on-primary, #fff);
+  background-color: var(--qfu-color-primary, #1976d2);
 }
 
 .variant-filled:hover:not(:disabled):not([aria-disabled="true"]) {
-  background-color: #1565c0;
+  filter: brightness(0.92);
 }
 
 .variant-outlined {
-  color: #1976d2;
+  color: var(--qfu-color-primary, #1976d2);
   background-color: transparent;
-  border: 1px solid #1976d2;
+  border: 1px solid var(--qfu-color-outline, #1976d2);
 }
 
 .variant-outlined:hover:not(:disabled):not([aria-disabled="true"]) {
-  background-color: rgba(25, 118, 210, 0.08);
+  background-color: color-mix(
+    in srgb,
+    var(--qfu-color-primary, #1976d2) 8%,
+    transparent
+  );
 }
 
 .variant-text {
-  color: #1976d2;
+  color: var(--qfu-color-primary, #1976d2);
   background-color: transparent;
 }
 
 .variant-text:hover:not(:disabled):not([aria-disabled="true"]) {
-  background-color: rgba(25, 118, 210, 0.08);
+  background-color: color-mix(
+    in srgb,
+    var(--qfu-color-primary, #1976d2) 8%,
+    transparent
+  );
 }
 
 .variant-elevated {
-  color: #fff;
-  background-color: #1976d2;
+  color: var(--qfu-color-on-primary, #fff);
+  background-color: var(--qfu-color-primary, #1976d2);
 }
 
 .variant-elevated:hover:not(:disabled):not([aria-disabled="true"]) {
-  background-color: #1565c0;
+  filter: brightness(0.92);
 }

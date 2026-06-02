@@ -1,6 +1,6 @@
 # qwik-flutter-ui — Public API Design
 
-> **Status:** v1 layout + typography finalized. **v1.1** (§15–§21) specified — v1.1 open questions approved (§40). **v1.2** scrolling (§22–§24) specified — resolve open questions in §39 before implementation. **v1.25** `MediaQuery` specified (§25) — resolve open questions in §27 before implementation. **v1.3** forms **specified** (§28–§37) — **7 of 12** open questions approved (§37, §43 #73–#79); **implementation blocked** until F1, F2, F3, F5, F10 resolved. **v1.4** selection controls **specified** (§46–§56) — **5 of 14** open questions approved (§56, §43 #80–#84); **implementation blocked** until SC1, SC3–SC4, SC7–SC10, SC13–SC14 resolved. **v1.5** form theming remains roadmap-level (§44).
+> **Status:** v1 layout + typography finalized. **v1.1** (§15–§21) specified — v1.1 open questions approved (§40). **v1.2** scrolling (§22–§24) specified — resolve open questions in §39 before implementation. **v1.25** `MediaQuery` specified (§25) — resolve open questions in §27 before implementation. **v1.3** forms **specified** (§28–§37). **v1.4** selection controls **specified** (§46–§56). **v1.5** theming **specified and implemented** (§57; decisions **T1–T6** in §43).
 > **Goal:** A Flutter-inspired UI framework for Qwik. The API should feel as close to Flutter as possible while remaining idiomatic JSX.
 
 ---
@@ -15,7 +15,7 @@ Every API decision in this document is justified against these ten principles. W
 4. **SSR friendly.** Every widget renders to static markup with no client JS needed for the initial paint. Hydration is opt-in and minimal.
 5. **Qwik resumability first.** No widget runs eager client-side code. Hooks live behind `useTask$`/`useVisibleTask$` only where unavoidable. No global state, no module-level side effects.
 6. **Strong TypeScript support.** Every prop is typed. Enums are exported with companion types. No `any`. No `string` where an enum exists. No `unknown` leaking into public surface.
-7. **Minimal runtime overhead.** Widgets compile to plain CSS classes and inline styles. No CSS-in-JS runtime. No theme provider context. Const-object enums tree-shake cleanly.
+7. **Minimal runtime overhead.** Widgets compile to plain CSS classes and inline styles. No CSS-in-JS runtime. Theming (§57) uses read-only Qwik context plus CSS custom properties on `<ThemeProvider>` — no reactive global theme store. Const-object enums tree-shake cleanly.
 8. **Production-ready API design.** Public surface is intentional — what we ship in v1 is what we'll maintain. Breaking changes after v1 follow semver.
 9. **Responsive design support.** Length values accept strings (`"50%"`, `"clamp(...)"`, `var(--w)`), enabling fluid layouts via CSS. v1 ships no breakpoint system; users compose with their own CSS. A breakpoint-aware prop shape is reserved for v2.
 10. **Consistent widget behavior.** Same prop name = same meaning across widgets. Same defaults across analogous widgets. Same overflow, sizing, and naming conventions everywhere unless Flutter explicitly differs.
@@ -73,6 +73,7 @@ Every API decision in this document is justified against these ten principles. W
 - §54 — v1.4 selection — accessibility review
 - §55 — v1.4 selection — SSR and resumability review
 - §56 — v1.4 Selection Controls open questions
+- §57 — v1.5 Theming
 - §38 — v1.2 scrolling — shared enums review
 - §39 — v1.2 Scrolling open questions
 - §40 — Open questions (v1.1, approval required)
@@ -284,6 +285,17 @@ src/
         ├── dropdown.tsx
         ├── types.ts
         └── index.ts
+    │
+    └── theme/                         // v1.5 — §57 (not a “widget”; provider + hooks)
+        ├── theme-provider.tsx
+        ├── use-theme.ts
+        ├── create-theme-data.ts
+        ├── merge.ts
+        ├── css-vars.ts
+        ├── context.ts
+        ├── defaults.ts
+        ├── types.ts
+        └── index.ts
 ```
 
 No `input-decoration/` widget folder — `InputDecoration` is exported from `_shared/types.ts` (§28, Decision #78).
@@ -323,6 +335,11 @@ export { Radio } from "./lib/radio";
 export { RadioGroup } from "./lib/radio-group";
 export { Switch } from "./lib/switch";
 export { Dropdown } from "./lib/dropdown";
+export {
+  ThemeProvider,
+  useTheme,
+  createThemeData,
+} from "./lib/theme";
 
 // Prop types
 export type { RowProps } from "./lib/row";
@@ -794,7 +811,7 @@ export const Breakpoint = {
 | -------- | ----- |
 | `MediaQuery` / `useMediaQuery()` | `MediaQueryData.breakpoint`; derived `isMobile` / `isTablet` / `isDesktop` |
 | `Responsive<T>` (v2+, §41.7) | `Partial<Record<Breakpoint, T>>` or alias map |
-| `ThemeData` (v1.5+, §44.4) | Per-tier design tokens |
+| `ThemeData` (v1.5, §57) | `ThemeProvider` + `createThemeData()`; per-tier tokens deferred |
 | Responsive widget props (v2+) | e.g. `padding?: Responsive<EdgeInsets>` |
 
 **Not in v1.25:** `xs`–`xl` enum members — reserved for `Responsive<T>` string keys (§41.7). Additive enum members (e.g. `largeDesktop`) may ship in a future semver minor.
@@ -978,6 +995,27 @@ export interface DropdownOption {
   label: string;
   disabled?: boolean;
 }
+
+// §57 Theming (v1.5)
+export interface ColorScheme {
+  primary: string;
+  onPrimary: string;
+  surface: string;
+  onSurface: string;
+  error: string;
+  onError: string;
+  outline: string;
+}
+export interface TextStyle { /* fontFamily, fontSize, fontWeight, … */ }
+export interface TextTheme { body?: TextStyle; title?: TextStyle; label?: TextStyle; caption?: TextStyle; }
+export interface ButtonTheme { foregroundColor?: string; backgroundColor?: string; borderColor?: string; borderRadius?: BorderRadius; padding?: EdgeInsets; }
+export interface InputDecorationTheme { labelColor?: string; helperColor?: string; errorColor?: string; placeholderColor?: string; outlineColor?: string; focusOutlineColor?: string; borderRadius?: BorderRadius; padding?: EdgeInsets; requiredIndicatorColor?: string; }
+export interface ThemeData {
+  colorScheme: ColorScheme;
+  textTheme?: TextTheme;
+  buttonTheme?: ButtonTheme;
+  inputDecorationTheme?: InputDecorationTheme;
+}
 ```
 
 **Notes:**
@@ -988,6 +1026,7 @@ export interface DropdownOption {
 - `ContainerTag` is shared by `Container` and `Card`. `InteractiveProps` is extended only by `Button` in v1.1.
 - `InputDecoration` is a **type only** — no `<InputDecoration>` component (Decision #78).
 - `DropdownOption` (§51) — option shape for native `<select>`; no `Option<T>` generic in v1.4.
+- Theming types (§57) — `ThemeData`, `ColorScheme`, `TextStyle`, `TextTheme`, `ButtonTheme`, `InputDecorationTheme`; factory `createThemeData()` in `src/lib/theme/`.
 
 ---
 
@@ -4848,6 +4887,234 @@ See §43 decisions **#80–#84** and §46–§50 widget specs.
 
 ---
 
+## 57. v1.5 Theming
+
+> **Status:** **Specified and implemented.** Decisions **T1–T6** approved (§43). Architecture open questions: **none**.
+
+Flutter `ThemeData` / `MaterialApp(theme: …)` → `ThemeProvider` + `createThemeData()` + `useTheme()`.
+
+### 57.1 Overview
+
+| Piece | Purpose |
+| ----- | ------- |
+| `ThemeData` | Bundle: `colorScheme`, optional `textTheme`, `buttonTheme`, `inputDecorationTheme` |
+| `createThemeData(partial?)` | Library baseline + optional deep-merge |
+| `ThemeProvider` | CSS variables on wrapper + Qwik context |
+| `useTheme()` | Read merged `ThemeData` (`Theme.of(context)` analogue) |
+
+**Single architecture:** `ThemeProvider` always sets **CSS custom properties** and **context**. No `scope` prop.
+
+### 57.2 `ThemeData`
+
+```ts
+interface ThemeData {
+  colorScheme: ColorScheme;           // required on complete theme
+  textTheme?: TextTheme;
+  buttonTheme?: ButtonTheme;
+  inputDecorationTheme?: InputDecorationTheme;
+}
+```
+
+Exported from `_shared/types.ts`. Four top-level groups only in v1.5.
+
+### 57.3 `ColorScheme`
+
+```ts
+interface ColorScheme {
+  primary: string;
+  onPrimary: string;
+  surface: string;
+  onSurface: string;
+  error: string;
+  onError: string;
+  outline: string;   // required (T2)
+}
+```
+
+Colors are CSS strings (§0.4). Consumers: `Button`, `Divider`, `TextField`, `Card` borders.
+
+### 57.4 `TextStyle` / `TextTheme`
+
+```ts
+interface TextStyle {
+  fontFamily?: string;
+  fontSize?: Length;
+  fontWeight?: FontWeight;
+  lineHeight?: number | Length;
+  letterSpacing?: Length;
+  color?: string;
+}
+
+interface TextTheme {
+  body?: TextStyle;
+  title?: TextStyle;
+  label?: TextStyle;
+  caption?: TextStyle;
+}
+```
+
+Reuses `FontWeight` (§1.15). `Text` keeps flat props; `TextTheme` supplies defaults when wired.
+
+### 57.5 `ButtonTheme`
+
+```ts
+interface ButtonTheme {
+  foregroundColor?: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  borderRadius?: BorderRadius;
+  padding?: EdgeInsets;
+}
+```
+
+Flat only — no per-`ButtonVariant` nested objects in v1.5.
+
+### 57.6 `InputDecorationTheme`
+
+```ts
+interface InputDecorationTheme {
+  labelColor?: string;
+  helperColor?: string;
+  errorColor?: string;
+  placeholderColor?: string;
+  outlineColor?: string;
+  focusOutlineColor?: string;
+  borderRadius?: BorderRadius;
+  padding?: EdgeInsets;
+  requiredIndicatorColor?: string;
+}
+```
+
+### 57.7 `createThemeData`
+
+```ts
+function createThemeData(partial?: Partial<ThemeData>): ThemeData;
+```
+
+- Returns complete `ThemeData` with default `colorScheme` including `outline`.
+- Pure — no `window` / `document` / `matchMedia`.
+- No `ThemeData.light()` / `.dark()` until `ThemeMode` ships.
+
+### 57.8 `ThemeProvider`
+
+```ts
+interface ThemeProviderProps extends BaseProps {
+  theme: Partial<ThemeData>;   // required — use theme={{}} for no overrides
+  inherit?: boolean;           // default true
+  as?: ContainerTag;           // default "div" (T3)
+}
+```
+
+| Prop | Required | Default | Behavior |
+| ---- | -------- | ------- | -------- |
+| `theme` | **Yes** | — | Partial overrides; `{}` is valid |
+| `inherit` | No | `true` | Deep-merge over ancestor; `false` → baseline `createThemeData()` |
+| `as` | No | `"div"` | Reuses `ContainerTag` |
+
+**Empty theme:**
+
+```tsx
+<ThemeProvider inherit={false} theme={{}}>
+```
+
+Resolves to `createThemeData()`.
+
+**Merge (T1):** field-level deep merge for `colorScheme`, `textTheme` (per key + per `TextStyle` field), `buttonTheme`, `inputDecorationTheme`.
+
+### 57.9 CSS variables (T6)
+
+| `ColorScheme` | CSS variable |
+| ------------- | ------------ |
+| `primary` | `--qfu-color-primary` |
+| `onPrimary` | `--qfu-color-on-primary` |
+| `surface` | `--qfu-color-surface` |
+| `onSurface` | `--qfu-color-on-surface` |
+| `error` | `--qfu-color-error` |
+| `onError` | `--qfu-color-on-error` |
+| `outline` | `--qfu-color-outline` |
+
+Pattern: `--qfu-<category>-<token>`. Widget CSS modules use `var(--qfu-color-primary, #1976d2)` fallbacks when no provider.
+
+### 57.10 `useTheme()`
+
+```ts
+function useTheme(): ThemeData;
+```
+
+| Context | Behavior |
+| ------- | -------- |
+| Inside `ThemeProvider` | Merged `ThemeData` |
+| Outside provider (dev) | `createThemeData()` + **one** console warning |
+| Outside provider (prod) | `createThemeData()` — no throw |
+
+**Fallback scope:** programmatic `ThemeData` only. **CSS variables are not injected** without `<ThemeProvider>`. Themed widget styling requires an ancestor provider.
+
+Cross-ref: §27 **M6** (`useMediaQuery` outside provider).
+
+### 57.11 Shared types review (v1.5)
+
+| Type | Decision |
+| ---- | -------- |
+| `ThemeData`, `ColorScheme`, `TextStyle`, `TextTheme` | **Ship** |
+| `ButtonTheme`, `InputDecorationTheme` | **Ship** |
+| `FocusTheme`, `ShapeTheme`, `FormTheme` | **Defer** |
+| `ThemeData.tokens` | **Reject** |
+
+### 57.12 Shared enums review (v1.5)
+
+| Enum | Decision |
+| ---- | -------- |
+| `FontWeight` | **Ship** (existing §1.15) |
+| `ThemeMode`, `Brightness` | **Defer** |
+
+### 57.13 Accessibility
+
+- Target WCAG 2.1 AA for bundled `createThemeData()` defaults on `on*` pairs.
+- `outline` for borders/separators — not primary text.
+- Focus rings remain in widget CSS modules (`:focus-visible`); no `FocusTheme` in v1.5.
+
+### 57.14 SSR and resumability
+
+- `ThemeProvider` renders wrapper `style` with CSS vars from merged theme on the server.
+- Nested providers scope variables on their wrapper (DOM cascade).
+- `useTheme()` without provider: same `createThemeData()` server/client.
+
+### 57.15 Flutter parity — intentional differences
+
+| Flutter | qwik-flutter-ui |
+| ------- | ----------------- |
+| `Theme.of(context)` | `useTheme()` |
+| Large `ThemeData` | Four top-level groups |
+| `ThemeMode` / `darkTheme` | Deferred |
+| `Color` class | CSS strings |
+
+### 57.16 Future roadmap
+
+- `ThemeMode` + dark mode
+- Material 3 color roles
+- `ShapeTheme`, `FocusTheme`, per-variant `ButtonTheme`
+- `--qfu-typography-*`, `--qfu-spacing-*`
+- Typed design-token registry (not `Record<string, unknown>`)
+
+### 57.17 Folder structure
+
+```
+src/lib/theme/
+  create-theme-data.ts
+  merge.ts
+  css-vars.ts
+  context.ts
+  use-theme.ts
+  theme-provider.tsx
+  types.ts
+  defaults.ts
+  index.ts
+```
+
+---
+
+---
+
 ## 38. v1.2 scrolling — shared enums review
 
 Candidates considered for v1.2. **None are added** to §1 unless listed below.
@@ -5371,6 +5638,12 @@ v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in 
 | **82** | **`RadioGroup` owns selection state** (SC6)                                                         | Group owns `name`, `value` / `defaultValue`, `onChange$`, `disabled`; `Radio` derives `checked` from context. |
 | **83** | **Selection control `label` prop** (SC11)                                                         | **`label?: string`** on widgets; **`InputDecoration` deferred**. |
 | **84** | **`Radio` label prop + slot** (SC12)                                                                | **`label?` + slotted content**; slot takes precedence over prop. |
+| **T1** | **Theme deep merge** (§57)                                                                        | Field-level deep merge for all subtrees when `ThemeProvider` `inherit={true}`. |
+| **T2** | **`ColorScheme.outline` required** (§57)                                                           | Seven required roles; shared border/separator token. |
+| **T3** | **`ThemeProvider.as` reuses `ContainerTag`** (§57)                                                  | No separate wrapper tag type. |
+| **T4** | **`ThemeProvider.theme: Partial<ThemeData>`** (§57)                                                 | Required prop; `theme={{}}` for no overrides. |
+| **T5** | **`createThemeData()` factory** (§57)                                                               | No `ThemeData.light()` / `.dark()` until `ThemeMode`. |
+| **T6** | **CSS variables `--qfu-color-*`** (§57)                                                            | Category-prefixed custom properties on `ThemeProvider` wrapper. |
 
 ---
 
@@ -5378,7 +5651,7 @@ v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in 
 
 ### Version roadmap summary
 
-Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§21; scrolling §22–§24; `MediaQuery` §25; **forms §28–§37**; **selection controls §46–§56**; theming §44.5.
+Canonical widget list per release. Full specs: layout §3–§14; v1.1 §15–§21; scrolling §22–§24; `MediaQuery` §25; **forms §28–§37**; **selection controls §46–§56**; **theming §57**.
 
 #### v1.0
 
@@ -5437,14 +5710,13 @@ Fully specified in **§46–§56**. Resolve open questions in **§56** (SC1, SC3
 - `Dropdown` (§50) — native `<select>` + `DropdownOption`
 - Shared type: `DropdownOption` (§51); **no new §1 enums** (§52)
 
-#### v1.5 — Form theming
+#### v1.5 — Theming (§57)
 
-- `FormTheme`
-- `InputDecorationTheme`
+- `ThemeProvider`, `useTheme()`, `createThemeData()`
+- `ThemeData`, `ColorScheme`, `TextTheme`, `TextStyle`, `ButtonTheme`, `InputDecorationTheme`
+- CSS variables `--qfu-color-*` (Decision **T6**)
 
 #### Future (v2+)
-
-- `ThemeProvider`, `ThemeData`, `ColorScheme`, `TextTheme`
 - `SafeArea`, `ScrollController`, `PageView`, `CustomScrollView`, `SliverList`, `SliverGrid`, `Scrollbar` — §44
 - `Responsive<T>` — §44
 - Plus: `Link`, `IconButton`, animation primitives
@@ -5585,7 +5857,7 @@ Fully specified in **§25–§27**. Resolve open questions in **§27** before im
 
 **v1.4 (specified):** §46–§56 — `Checkbox`, `Radio`, `RadioGroup`, `Switch`, `Dropdown`. Implementation gated on §56 (SC1, SC3–SC4, SC7–SC10, SC13–SC14).
 
-**v1.5 — Form theming:** `FormTheme`, `InputDecorationTheme`; optional `AutofillHint` typed helper (additive to `autoComplete?: string`).
+**v1.5 — Theming (§57):** `ThemeProvider`, `useTheme()`, `createThemeData()`, theme types; widget CSS consumes `var(--qfu-color-*)`. Optional future: `AutofillHint` enum (additive to `autoComplete?: string`).
 
 | Widget | Milestone | Notes |
 | ------ | --------- | ----- |
@@ -5594,8 +5866,9 @@ Fully specified in **§25–§27**. Resolve open questions in **§27** before im
 | `RadioGroup` | v1.4 | `string` in `FormValues` (#82) |
 | `Switch` | v1.4 | Same API as `Checkbox` (#81) |
 | `Dropdown` | v1.4 | Native `<select>`; `string` only (§50) |
-| `InputDecorationTheme` | v1.5 | Needs `ThemeProvider` |
-| `FormTheme` | v1.5 | |
+| `InputDecorationTheme` | v1.5 | §57 — type + `ThemeProvider` |
+| `ThemeProvider` / `ThemeData` | v1.5 | §57 |
+| `FormTheme` | v2+ | Use `inputDecorationTheme` in v1.5 |
 | `FocusNode` | v2 | |
 | `TextEditingController` | v2 | Signals preferred |
 | `AutofillHint` enum | v1.5+ | Decision #73 |
@@ -5632,30 +5905,11 @@ Fully specified in **§25–§27**. Resolve open questions in **§27** before im
 
 ---
 
-### Theming (future)
+### Theming (v1.5 — shipped)
 
-Roadmap-level only — informs `ButtonSize`, `Divider` colors, and form focus rings. **No public `ThemeProvider` API in v1.1.**
+Implemented in **§57**. `ThemeProvider` sets `--qfu-color-*` CSS variables and provides read-only context for `useTheme()`. `Button`, `Divider`, and `TextField` CSS modules consume theme tokens with fallbacks.
 
-| Piece | Purpose | Flutter equivalent |
-| ----- | ------- | ------------------ |
-| `ThemeProvider` | Supply theme to descendant widgets | [`Theme`](https://api.flutter.dev/flutter/material/Theme-class.html) / `InheritedWidget` |
-| `ThemeData` | Bundle of visual defaults | [`ThemeData`](https://api.flutter.dev/flutter/material/ThemeData-class.html) |
-| `ColorScheme` | Semantic colors (primary, surface, error, …) | [`ColorScheme`](https://api.flutter.dev/flutter/material/ColorScheme-class.html) |
-| `TextTheme` | Typography scale (display, body, label, …) | [`TextTheme`](https://api.flutter.dev/flutter/material/TextTheme-class.html) |
-
-**Proposed architecture (direction):**
-
-1. **CSS custom properties first** — `ThemeProvider` renders a wrapper that sets `--qfu-primary`, `--qfu-surface`, `--qfu-on-surface`, etc. Widget CSS modules consume `var(--qfu-*)`. SSR-friendly: theme is markup + CSS, no runtime style injection (Principle #4, #7).
-2. **Optional context for overrides** — lightweight Qwik context (`useTheme()`) for programmatic access (e.g. charts), not required for static pages.
-3. **Dark mode** — `colorScheme` prop or `media` strategy documented; default `prefers-color-scheme` with opt-in class.
-4. **Widget defaults** — `Button`, `Card`, `Divider`, `Text` read tokens when props omitted; explicit props always win (§0.6).
-
-**Future considerations:**
-
-- **No theme in v1.1** avoids half-migrated widgets; hard-coded neutrals until provider lands.
-- Breaking risk: introducing defaults later must preserve explicit prop overrides (non-breaking).
-- May split **`ThemeData`** into `export type` only at first; provider ships when ≥3 widgets consume tokens.
-- **Material 3** color roles (`surfaceContainer`, `onSurfaceVariant`) vs M2 simplification — decision deferred.
+**Deferred:** `ThemeMode`, `Brightness`, `FocusTheme`, `ShapeTheme`, `FormTheme`, Material 3 roles, typed design-token registry.
 
 ---
 
@@ -5676,7 +5930,8 @@ Roadmap-level only — informs `ButtonSize`, `Divider` colors, and form focus ri
 | **v1.25** | `MediaQuery` §25–§27; `Orientation`, `Breakpoint` enums (§1.27–§1.28). |
 | **v1.3** | Forms §28–§37; enums §1.29–§1.31. |
 | **v1.4** | Selection §46–§50; cross-cutting §51–§56; `DropdownOption` type. |
-| **Future** | v1.5 form theming, virtualization, `Link`, `Responsive<T>`, animation, v2 selection (Slider, chips, custom dropdown). |
+| **v1.5** | Theming §57 — `ThemeProvider`, `useTheme()`, `createThemeData()`, theme types. |
+| **Future** | `ThemeMode`, virtualization, `Link`, `Responsive<T>`, animation, v2 selection (Slider, chips, custom dropdown). |
 
 ---
 
@@ -5816,4 +6071,14 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 - [ ] Playground settings form demo (checkbox, radio group, switch, dropdown).
 - [ ] `axe` on selection screen (§54).
 
-> Out of scope for Phases 1–12: v1.4 selection (Phase 13), v1.5 form theming, and v2 expansion.
+### Phase 14 — v1.5 theming
+
+> **Spec:** §57. Decisions **T1–T6** approved (§43).
+
+- [x] Extend `_shared/types.ts` — `ThemeData`, `ColorScheme`, `TextStyle`, `TextTheme`, `ButtonTheme`, `InputDecorationTheme`.
+- [x] `src/lib/theme/` — `ThemeProvider`, `useTheme`, `createThemeData`, `mergeThemeData`, CSS vars.
+- [x] Wire `Button`, `Divider`, `TextField` CSS to `var(--qfu-color-*)`.
+- [x] Export from `src/index.ts` (§0.10).
+- [x] Playground wraps with `<ThemeProvider inherit={false} theme={{}}>`.
+
+> Out of scope for Phases 1–13: v2 expansion (`ThemeMode`, `FocusTheme`, …).
