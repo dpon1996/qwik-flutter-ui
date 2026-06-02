@@ -3,7 +3,9 @@
  */
 
 import type {
+  BaseProps,
   BorderRadius,
+  ContainerTag,
   EdgeInsets,
   FontWeight,
   Length,
@@ -66,4 +68,14 @@ export interface ThemeData {
   textTheme?: TextTheme;
   buttonTheme?: ButtonTheme;
   inputDecorationTheme?: InputDecorationTheme;
+}
+
+/** Props for `ThemeProvider` (§57). */
+export interface ThemeProviderProps extends BaseProps {
+  /** Required partial overrides (`theme={{}}` for library defaults). Decision T4. */
+  theme: Partial<ThemeData>;
+  /** When `true` (default), deep-merge over ancestor; when `false`, reset to `createThemeData()` baseline. */
+  inherit?: boolean;
+  /** Semantic wrapper tag. Default `"div"`. Reuses `ContainerTag` (Decision T3). */
+  as?: ContainerTag;
 }

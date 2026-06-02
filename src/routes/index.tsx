@@ -33,7 +33,10 @@ export default component$(() => {
 
         <Form onSubmit$={onFormSubmit}>
           <Column gap={16}>
-            <TextField name="name" decoration={{ label: "Name" }} required />
+
+            <TextField name="name" decoration={{ label: "Name" }} required outlineColor="red" focusOutlineColor="black" />
+
+
             <Checkbox
               name="terms"
               label="I agree to the terms"

@@ -3,4 +3,7 @@
  */
 
 export { TextField } from "./text-field";
-export type { TextFieldProps } from "./types";
+export type {
+  TextFieldDecorationStyleProps,
+  TextFieldProps,
+} from "./types";

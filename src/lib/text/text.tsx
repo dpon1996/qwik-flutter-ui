@@ -14,6 +14,8 @@
  *  - `overflow` maps to CSS overflow / text-overflow / mask (fade).
  *  - `selectable` defaults to `true` (web idiom); `false` → `user-select: none`.
  *  - Per-instance styles are inline for SSR-friendly markup (Principle #4).
+ *  - `useTheme().textTheme` supplies typography defaults when props are omitted
+ *    (§57): `as` maps to `body` | `title` | `label` | `caption`; explicit props win.
  *  - User `class` / `style` merge with internal values; user wins (§0.6).
  */
 
@@ -21,9 +23,35 @@ import { Slot, component$, type CSSProperties } from "@builder.io/qwik";
 
 import { TextOverflow } from "../_shared";
 import { toLength } from "../_shared/internal";
+import { useTheme } from "../theme";
+import type { TextStyle } from "../theme/types";
 
+import { resolveTextThemeStyle } from "./resolve-text-theme";
 import styles from "./text.module.css";
 import type { TextProps } from "./types";
+
+function applyTextStyle(
+  computed: CSSProperties,
+  style: TextStyle | undefined,
+): void {
+  if (style === undefined) return;
+
+  if (style.color !== undefined) computed.color = style.color;
+  if (style.fontSize !== undefined) {
+    computed.fontSize = toLength(style.fontSize);
+  }
+  if (style.fontFamily !== undefined) computed.fontFamily = style.fontFamily;
+  if (style.fontWeight !== undefined) computed.fontWeight = style.fontWeight;
+  if (style.letterSpacing !== undefined) {
+    computed.letterSpacing = toLength(style.letterSpacing);
+  }
+  if (style.lineHeight !== undefined) {
+    computed.lineHeight =
+      typeof style.lineHeight === "number"
+        ? style.lineHeight
+        : toLength(style.lineHeight);
+  }
+}
 
 export const Text = component$<TextProps>((props) => {
   const {
@@ -50,7 +78,12 @@ export const Text = component$<TextProps>((props) => {
     ...rest
   } = props;
 
+  const themed = resolveTextThemeStyle(as, useTheme().textTheme);
+
   const computed: CSSProperties = {};
+
+  // Theme defaults first; explicit props override (§0.6).
+  applyTextStyle(computed, themed);
 
   if (color !== undefined) computed.color = color;
   if (fontSize !== undefined) computed.fontSize = toLength(fontSize);

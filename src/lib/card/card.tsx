@@ -9,10 +9,13 @@
  *    When `boxShadow` is provided it wins over `elevation` (§0.6).
  *  - Default `elevation` is `1` (decision #32: no default `margin`).
  *  - Per-instance values are inline `style` for SSR (Principle #4).
+ *  - `useTheme().colorScheme` supplies surface / onSurface / outline when props
+ *    are omitted (§57); explicit props override theme (§0.6).
  */
 
 import { Slot, component$, type CSSProperties } from "@builder.io/qwik";
 
+import type { BorderSide } from "../_shared";
 import {
   elevationToBoxShadow,
   toBorderRadiusString,
@@ -20,9 +23,23 @@ import {
   toBoxShadowString,
   toEdgeInsetsString,
 } from "../_shared/internal";
+import { useTheme } from "../theme";
 
+import { resolveCardThemeStyles } from "./resolve-card-theme";
 import styles from "./card.module.css";
 import type { CardProps } from "./types";
+
+function resolveBorder(
+  border: string | BorderSide | undefined,
+  outlineColor: string,
+): string | undefined {
+  if (border === undefined) return undefined;
+  if (typeof border === "string") return border;
+  return toBorderString({
+    ...border,
+    color: border.color ?? outlineColor,
+  });
+}
 
 export const Card = component$<CardProps>((props) => {
   const {
@@ -39,7 +56,14 @@ export const Card = component$<CardProps>((props) => {
     ...rest
   } = props;
 
-  const computed: CSSProperties = {};
+  const { colorScheme } = useTheme();
+  const themed = resolveCardThemeStyles(colorScheme);
+
+  const computed: CSSProperties = {
+    backgroundColor: themed.backgroundColor,
+    color: themed.color,
+    border: themed.border,
+  };
 
   if (margin !== undefined) computed.margin = toEdgeInsetsString(margin);
   if (padding !== undefined) computed.padding = toEdgeInsetsString(padding);
@@ -47,7 +71,9 @@ export const Card = component$<CardProps>((props) => {
   if (borderRadius !== undefined) {
     computed.borderRadius = toBorderRadiusString(borderRadius);
   }
-  if (border !== undefined) computed.border = toBorderString(border);
+  if (border !== undefined) {
+    computed.border = resolveBorder(border, themed.outlineColor);
+  }
 
   if (boxShadow !== undefined) {
     computed.boxShadow = toBoxShadowString(boxShadow);

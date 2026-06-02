@@ -8,12 +8,21 @@
  *  - `InputType` enum values map 1:1 to HTML `type` (e.g. `datetimeLocal` → `datetime-local`).
  *  - Error text uses `role="alert"` when `decoration.errorText` is set (F8).
  *  - Controlled `value` or `defaultValue` only — never both on the native element.
+ *  - `useTheme().inputDecorationTheme` supplies decoration defaults when style
+ *    props are omitted (§57); explicit props override theme (§0.6).
+ *  - Outline / focus / placeholder use CSS variables on `.root` for SSR.
  */
 
 import { $, component$, useId, type CSSProperties } from "@builder.io/qwik";
 
 import { InputMode, InputType } from "../_shared";
+import { toBorderRadiusString, toEdgeInsetsString } from "../_shared/internal";
+import { useTheme } from "../theme";
 
+import {
+  resolvedStylesToCssVars,
+  resolveInputDecorationStyles,
+} from "./resolve-input-decoration-theme";
 import styles from "./text-field.module.css";
 import type { TextFieldProps } from "./types";
 
@@ -48,6 +57,15 @@ function deriveTextareaRows(
 export const TextField = component$<TextFieldProps>((props) => {
   const {
     decoration,
+    labelColor,
+    helperColor,
+    errorColor,
+    placeholderColor,
+    outlineColor,
+    focusOutlineColor,
+    borderRadius,
+    padding,
+    requiredIndicatorColor,
     name,
     value,
     defaultValue,
@@ -112,9 +130,50 @@ export const TextField = component$<TextFieldProps>((props) => {
 
   const rootClasses = [styles.root, className].filter(Boolean).join(" ");
 
-  const rootStyle: CSSProperties = userStyle
-    ? { ...(userStyle as CSSProperties) }
-    : {};
+  const { colorScheme, inputDecorationTheme } = useTheme();
+  const resolved = resolveInputDecorationStyles(
+    {
+      labelColor,
+      helperColor,
+      errorColor,
+      placeholderColor,
+      outlineColor,
+      focusOutlineColor,
+      borderRadius,
+      padding,
+      requiredIndicatorColor,
+    },
+    inputDecorationTheme,
+    colorScheme,
+  );
+
+  const rootStyle: CSSProperties = {
+    ...resolvedStylesToCssVars(resolved),
+    ...(userStyle as CSSProperties | undefined),
+  };
+
+  const labelStyle: CSSProperties | undefined =
+    resolved.labelColor !== undefined ? { color: resolved.labelColor } : undefined;
+
+  const helperStyle: CSSProperties | undefined =
+    resolved.helperColor !== undefined ? { color: resolved.helperColor } : undefined;
+
+  const errorStyle: CSSProperties = { color: resolved.errorColor };
+
+  const requiredMarkStyle: CSSProperties | undefined =
+    resolved.requiredIndicatorColor !== undefined
+      ? { color: resolved.requiredIndicatorColor }
+      : undefined;
+
+  const fieldRowStyle: CSSProperties = {};
+  if (resolved.borderRadius !== undefined) {
+    fieldRowStyle.borderRadius = toBorderRadiusString(resolved.borderRadius);
+  }
+
+  const controlStyle: CSSProperties = {};
+  if (resolved.padding !== undefined) {
+    controlStyle.padding = toEdgeInsetsString(resolved.padding);
+  }
 
   const handleInput = onInput$
     ? $((ev: InputEvent) => {
@@ -127,6 +186,7 @@ export const TextField = component$<TextFieldProps>((props) => {
     id: inputId,
     name,
     class: controlClasses,
+    style: Object.keys(controlStyle).length > 0 ? controlStyle : undefined,
     disabled,
     readOnly,
     required: isRequired || undefined,
@@ -149,10 +209,14 @@ export const TextField = component$<TextFieldProps>((props) => {
   return (
     <div class={rootClasses} style={rootStyle}>
       {decoration?.label !== undefined && decoration.label !== "" && (
-        <label class={styles.label} for={inputId}>
+        <label class={styles.label} style={labelStyle} for={inputId}>
           {decoration.label}
           {isRequired && (
-            <span class={styles.requiredMark} aria-hidden="true">
+            <span
+              class={styles.requiredMark}
+              style={requiredMarkStyle}
+              aria-hidden="true"
+            >
               {" "}
               *
             </span>
@@ -160,7 +224,10 @@ export const TextField = component$<TextFieldProps>((props) => {
         </label>
       )}
 
-      <div class={fieldRowClasses}>
+      <div
+        class={fieldRowClasses}
+        style={Object.keys(fieldRowStyle).length > 0 ? fieldRowStyle : undefined}
+      >
         {decoration?.prefix !== undefined && decoration.prefix !== "" && (
           <span class={styles.prefix}>{decoration.prefix}</span>
         )}
@@ -180,13 +247,13 @@ export const TextField = component$<TextFieldProps>((props) => {
       </div>
 
       {decoration?.helperText !== undefined && decoration.helperText !== "" && (
-        <span id={helperId} class={styles.helper}>
+        <span id={helperId} class={styles.helper} style={helperStyle}>
           {decoration.helperText}
         </span>
       )}
 
       {hasError && (
-        <span id={errorId} class={styles.error} role="alert">
+        <span id={errorId} class={styles.error} style={errorStyle} role="alert">
           {errorText}
         </span>
       )}

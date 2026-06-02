@@ -11,18 +11,18 @@
  *    inset the line along the main axis (Flutter parity).
  *  - Numeric `Length` → `px` via `_shared/internal` (Principle #9).
  *  - Zero-slot widget — no children.
+ *  - `useTheme().colorScheme.outline` when `color` is omitted (§57, T2).
  */
 
 import { component$, type CSSProperties } from "@builder.io/qwik";
 
 import { Axis } from "../_shared";
 import { toLength } from "../_shared/internal";
+import { useTheme } from "../theme";
 
 import styles from "./divider.module.css";
 import type { Length } from "../_shared";
 import type { DividerProps } from "./types";
-
-const DEFAULT_COLOR = "#e0e0e0";
 
 /**
  * Horizontal line styles for `<hr>`. Uses `border-top` when `size` and
@@ -79,11 +79,13 @@ export const Divider = component$<DividerProps>((props) => {
     size = 16,
     indent = 0,
     endIndent = 0,
-    color = DEFAULT_COLOR,
+    color: colorProp,
     class: className,
     style: userStyle,
     ...rest
   } = props;
+
+  const color = colorProp ?? useTheme().colorScheme.outline;
 
   const thicknessCss = toLength(thickness);
   const sizeCss = toLength(size);

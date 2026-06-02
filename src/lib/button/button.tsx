@@ -10,6 +10,8 @@
  *  - Disabled `<a>`: `aria-disabled`, no `href`, `tabIndex={-1}`, no `onClick$`.
  *  - `ButtonVariant.elevated` uses shared `elevationToBoxShadow` presets.
  *  - Variant presets in CSS module; caller overrides via flat decoration props.
+ *  - `useTheme()` supplies `buttonTheme` + `colorScheme` defaults when props omitted
+ *    (§57); explicit props override theme (§0.6).
  *  - SSR-friendly: static classes + optional inline `style` only.
  *  - Visible `:focus-visible` ring (§17 accessibility).
  */
@@ -23,7 +25,9 @@ import {
   toBorderString,
   toEdgeInsetsString,
 } from "../_shared/internal";
+import { useTheme } from "../theme";
 
+import { resolveButtonThemeStyles } from "./resolve-button-theme";
 import styles from "./button.module.css";
 import type { ButtonProps } from "./types";
 
@@ -50,7 +54,26 @@ export const Button = component$<ButtonProps>((props) => {
 
   const isAnchor = href !== undefined || as === "a";
 
+  const { colorScheme, buttonTheme } = useTheme();
+  const themed = resolveButtonThemeStyles(
+    variant,
+    colorScheme,
+    buttonTheme,
+  );
+
   const computed: CSSProperties = {};
+
+  if (themed.color !== undefined) computed.color = themed.color;
+  if (themed.backgroundColor !== undefined) {
+    computed.backgroundColor = themed.backgroundColor;
+  }
+  if (themed.padding !== undefined) {
+    computed.padding = toEdgeInsetsString(themed.padding);
+  }
+  if (themed.borderRadius !== undefined) {
+    computed.borderRadius = toBorderRadiusString(themed.borderRadius);
+  }
+  if (themed.border !== undefined) computed.border = themed.border;
 
   if (color !== undefined) computed.color = color;
   if (backgroundColor !== undefined) computed.backgroundColor = backgroundColor;

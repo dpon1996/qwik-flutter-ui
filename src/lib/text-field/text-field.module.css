@@ -22,7 +22,7 @@
 
 .requiredMark {
   margin-left: 0.125rem;
-  color: #c62828;
+  color: var(--qfu-input-required-color, #c62828);
 }
 
 .fieldRow {
@@ -30,17 +30,17 @@
   display: flex;
   align-items: stretch;
   width: 100%;
-  border: 1px solid #bdbdbd;
-  border-radius: 0.25rem;
+  border: 1px solid var(--qfu-input-outline-color, #bdbdbd);
+  border-radius: var(--qfu-input-border-radius, 0.25rem);
   background-color: #fff;
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 }
 
-.fieldRow:focus-within {
-  border-color: #1976d2;
-  box-shadow: 0 0 0 1px #1976d2;
+.fieldRow:focus-within:not(.fieldRowInvalid) {
+  border-color: var(--qfu-input-focus-outline-color, #1976d2);
+  box-shadow: 0 0 0 1px var(--qfu-input-focus-outline-color, #1976d2);
 }
 
 .fieldRowDisabled {
@@ -49,12 +49,12 @@
 }
 
 .fieldRowInvalid {
-  border-color: #c62828;
+  border-color: var(--qfu-input-error-color, #c62828);
 }
 
 .fieldRowInvalid:focus-within {
-  border-color: #c62828;
-  box-shadow: 0 0 0 1px #c62828;
+  border-color: var(--qfu-input-error-color, #c62828);
+  box-shadow: 0 0 0 1px var(--qfu-input-error-color, #c62828);
 }
 
 .prefix,
@@ -97,7 +97,7 @@
 }
 
 .control::placeholder {
-  color: #9e9e9e;
+  color: var(--qfu-input-placeholder-color, #9e9e9e);
   opacity: 1;
 }
 

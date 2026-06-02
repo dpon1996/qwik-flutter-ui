@@ -6,16 +6,36 @@ import type { QRL } from "@builder.io/qwik";
 
 import type {
   BaseProps,
+  BorderRadius,
+  EdgeInsets,
   InputDecoration,
   InputMode,
   InputType,
 } from "../_shared";
 
 /**
+ * Optional decoration styling overrides (§57). Omitted props resolve from
+ * `theme.inputDecorationTheme` inside `TextField`.
+ */
+export interface TextFieldDecorationStyleProps {
+  labelColor?: string;
+  helperColor?: string;
+  errorColor?: string;
+  placeholderColor?: string;
+  outlineColor?: string;
+  focusOutlineColor?: string;
+  borderRadius?: BorderRadius;
+  padding?: EdgeInsets;
+  requiredIndicatorColor?: string;
+}
+
+/**
  * Props for the `TextField` widget — single-line or multiline text entry.
  * Flutter equivalent of `TextField`.
  */
-export interface TextFieldProps extends BaseProps {
+export interface TextFieldProps
+  extends BaseProps,
+    TextFieldDecorationStyleProps {
   decoration?: InputDecoration;
   /** Optional — standalone fields; required on `TextFormField` (§30). */
   name?: string;

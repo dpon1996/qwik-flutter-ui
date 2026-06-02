@@ -27,6 +27,6 @@ export interface DividerProps extends BaseProps {
   /** Inset after the line along the main axis. Default `0`. */
   endIndent?: Length;
 
-  /** CSS color of the line. Default `#e0e0e0`. */
+  /** CSS color of the line. Default: `theme.colorScheme.outline` (§57). */
   color?: string;
 }
