@@ -109,17 +109,19 @@ export interface SnackBarOptions {
   message: string;
   actionLabel?: string;
   onAction$?: QRL<() => void>;
-  /** Display duration in ms. Default ~4000. */
+  onDismiss$?: QRL<() => void>;
+  /** Display duration in ms. Default ~4000. Host owns timer (§80.4). */
   duration?: number;
 }
 
-/** Declarative `SnackBar` (§80.3); primary DX is `enqueueSnackBar$`. */
+/** Props for `SnackBar` UI (§80.3) — rendered by `SnackBarHost` from queue state. */
 export interface SnackBarProps extends BaseProps {
-  open?: boolean;
   message: string;
   actionLabel?: string;
-  onAction$?: QRL<() => void>;
+  /** Pass-through metadata; host owns auto-dismiss timer (§80.4). */
   duration?: number;
+  onAction$?: QRL<() => void>;
+  onDismiss$?: QRL<() => void>;
 }
 
 /** Props for `SnackBarHost` (§80). Renders under `OverlayContainer`. */

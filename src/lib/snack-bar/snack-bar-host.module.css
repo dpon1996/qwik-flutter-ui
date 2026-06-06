@@ -1,0 +1,17 @@
+/**
+ * `SnackBarHost` viewport — bottom-center overlay slot (§80.2).
+ */
+
+.viewport {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0 0 1rem;
+  pointer-events: none;
+}
+
+.host {
+  /* Inert anchor when queue is empty (SSR). */
+}

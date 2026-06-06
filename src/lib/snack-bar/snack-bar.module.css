@@ -1,0 +1,70 @@
+/**
+ * `SnackBar` — Material-inspired surface (§80, OV15 widget-owned motion).
+ */
+
+.root {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 17.5rem;
+  max-width: min(35.5rem, calc(100vw - 2rem));
+  padding: 0.875rem 1rem;
+  background: var(--qfu-color-inverse-surface, #323232);
+  color: var(--qfu-color-on-inverse-surface, #f5f5f5);
+  border-radius: 0.25rem;
+  box-shadow:
+    0 3px 5px -1px rgb(0 0 0 / 0.2),
+    0 6px 10px 0 rgb(0 0 0 / 0.14),
+    0 1px 18px 0 rgb(0 0 0 / 0.12);
+}
+
+.message {
+  flex: 1 1 auto;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.action {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--qfu-color-primary, #c8b6ff);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.action:focus-visible {
+  outline: 2px solid var(--qfu-color-primary, #c8b6ff);
+  outline-offset: 2px;
+  border-radius: 0.125rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .root {
+    animation: qfu-snackbar-enter 200ms ease-out;
+  }
+}
+
+@keyframes qfu-snackbar-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    animation: none;
+  }
+}

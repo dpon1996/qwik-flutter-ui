@@ -7228,7 +7228,7 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 - [x] `src/lib/dialog/` — §77 (`Dialog`, `DialogTitle`, `DialogContent`, `DialogActions`).
 - [x] `src/lib/alert-dialog/` — §78 (wraps `Dialog`; no separate overlay stack).
 - [x] `src/lib/modal-bottom-sheet/` — §79 (static sheet only).
-- [ ] `src/lib/snack-bar/` — `SnackBarHost`, `enqueueSnackBar$`, declarative `SnackBar` (§80).
+- [x] `src/lib/snack-bar/` — `SnackBarHost`, `enqueueSnackBar$`, `SnackBar` UI (§80, OV14).
 - [ ] `src/lib/tooltip/`, `popover/`, `menu/` — §81–§83.
 - [ ] OV13 fallback container + dev warning; OV12 SSR `defaultOpen` warning.
 - [x] Export `OverlayContainer` from `src/index.ts` (§0.10) — **not** `OverlayPortal` / context.

@@ -49,3 +49,4 @@ export * from "./lib/overlay";
 export * from "./lib/dialog";
 export * from "./lib/alert-dialog";
 export * from "./lib/modal-bottom-sheet";
+export * from "./lib/snack-bar";

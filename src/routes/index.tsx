@@ -1,4 +1,4 @@
-import { $, component$, useSignal } from "@builder.io/qwik";
+import { $, component$, useSignal, type Signal } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
 import type { FormValues } from "~/lib/_shared";
 import {
@@ -19,6 +19,7 @@ import { ModalBottomSheet } from "~/lib/modal-bottom-sheet";
 import { OverlayContainer } from "~/lib/overlay";
 import { Radio } from "~/lib/radio";
 import { RadioGroupFormField } from "~/lib/radio-group-form-field";
+import { enqueueSnackBar, SnackBarHost } from "~/lib/snack-bar";
 import { Switch } from "~/lib/switch";
 import { Text } from "~/lib/text";
 import { TextField } from "~/lib/text-field";
@@ -30,11 +31,40 @@ const COUNTRIES = [
   { value: "mx", label: "Mexico" },
 ];
 
+/** Playground-only ref so module-scoped QRLs can update snack demo status. */
+const snackDemo = {
+  status: null as Signal<string> | null,
+};
+
+const onUndoSnackAction$ = $(() => {
+  if (snackDemo.status) {
+    snackDemo.status.value = "Undo action fired";
+  }
+});
+
+const onSnackDismissed$ = $(() => {
+  if (snackDemo.status) {
+    snackDemo.status.value = "Snack dismissed";
+  }
+});
+
+const enqueueActionSnack = $(() => {
+  enqueueSnackBar({
+    message: "Item deleted",
+    actionLabel: "Undo",
+    onAction$: onUndoSnackAction$,
+    onDismiss$: onSnackDismissed$,
+  });
+});
+
 export default component$(() => {
   const submitResult = useSignal<string | null>(null);
   const alertOpen = useSignal(false);
   const sheetOpen = useSignal(false);
   const stackDialogOpen = useSignal(false);
+
+  const snackStatus = useSignal("No snack enqueued yet.");
+  snackDemo.status = snackStatus;
 
   const onFormSubmit = $((values: FormValues) => {
     submitResult.value = JSON.stringify(values, null, 2);
@@ -64,9 +94,22 @@ export default component$(() => {
     stackDialogOpen.value = next;
   });
 
+  const enqueueSavedSnack = $(() => {
+    enqueueSnackBar({ message: "Saved" });
+    snackStatus.value = 'Enqueued: "Saved"';
+  });
+
+  const enqueueQueuedSnacks = $(() => {
+    enqueueSnackBar({ message: "Snack A", duration: 5000 });
+    enqueueSnackBar({ message: "Snack B" });
+    enqueueSnackBar({ message: "Snack C" });
+    snackStatus.value = "Enqueued A, B, C (FIFO queue)";
+  });
+
   return (
     <ThemeProvider inherit={false} theme={{}}>
       <OverlayContainer>
+        <SnackBarHost />
         <Container padding={24}>
           <Column gap={24}>
             <Text as="h1">qwik-flutter-ui playground</Text>
@@ -133,6 +176,19 @@ export default component$(() => {
                 </Button>
               </DialogActions>
             </Dialog>
+
+            <Text as="h2">Overlays — SnackBar (OV14)</Text>
+
+            <Button type="button" onClick$={enqueueSavedSnack}>
+              enqueueSnackBar$ — Saved
+            </Button>
+            <Button type="button" onClick$={enqueueQueuedSnacks}>
+              enqueueSnackBar$ — queue A + B
+            </Button>
+            <Button type="button" onClick$={enqueueActionSnack}>
+              enqueueSnackBar$ — with action
+            </Button>
+            <Text>{snackStatus.value}</Text>
 
             <Text as="h2">Selection controls + Form</Text>
 
