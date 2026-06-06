@@ -1,65 +1,142 @@
-# Qwik City App ⚡️
+# qwik-flutter-ui
 
-- [Qwik Docs](https://qwik.dev/)
-- [Discord](https://qwik.dev/chat)
-- [Qwik GitHub](https://github.com/QwikDev/qwik)
-- [@QwikDev](https://twitter.com/QwikDev)
-- [Vite](https://vitejs.dev/)
+A Flutter-inspired UI component library for [Qwik](https://qwik.dev/). Widget names, props, and enums follow Flutter conventions so the API feels familiar, while output stays semantic HTML and Qwik-resumable.
 
----
+## Install
 
-## Project Structure
-
-This project is using Qwik with [QwikCity](https://qwik.dev/qwikcity/overview/). QwikCity is just an extra set of tools on top of Qwik to make it easier to build a full site, including directory-based routing, layouts, and more.
-
-Inside your project, you'll see the following directory structure:
-
-```
-├── public/
-│   └── ...
-└── src/
-    ├── components/
-    │   └── ...
-    └── routes/
-        └── ...
+```bash
+npm install qwik-flutter-ui @builder.io/qwik
 ```
 
-- `src/routes`: Provides the directory-based routing, which can include a hierarchy of `layout.tsx` layout files, and an `index.tsx` file as the page. Additionally, `index.ts` files are endpoints. Please see the [routing docs](https://qwik.dev/qwikcity/routing/overview/) for more info.
+Peer dependency: `@builder.io/qwik` >= 1.20.0
 
-- `src/components`: Recommended directory for components.
+## Quick start
 
-- `public`: Any static assets, like images, can be placed in the public directory. Please see the [Vite public directory](https://vitejs.dev/guide/assets.html#the-public-directory) for more info.
+Wrap your app in `ThemeProvider` and compose widgets like you would in Flutter:
 
-## Add Integrations and deployment
+```tsx
+import { component$ } from "@builder.io/qwik";
+import {
+  ThemeProvider,
+  Column,
+  Text,
+  Button,
+  ButtonVariant,
+} from "qwik-flutter-ui";
 
-Use the `npm run qwik add` command to add additional integrations. Some examples of integrations includes: Cloudflare, Netlify or Express Server, and the [Static Site Generator (SSG)](https://qwik.dev/qwikcity/guides/static-site-generation/).
-
-```shell
-npm run qwik add # or `yarn qwik add`
+export default component$(() => (
+  <ThemeProvider>
+    <Column gap={16} padding={24}>
+      <Text as="h1">Hello, qwik-flutter-ui</Text>
+      <Button variant={ButtonVariant.filled}>Get started</Button>
+    </Column>
+  </ThemeProvider>
+));
 ```
 
-## Development
+For overlays (dialogs, snack bars, tooltips, etc.), mount an `OverlayContainer` once near the root of your app.
 
-Development mode uses [Vite's development server](https://vitejs.dev/). The `dev` command will server-side render (SSR) the output during development.
+## Components
 
-```shell
-npm start # or `yarn start`
+### Layout
+
+| Widget | Flutter equivalent |
+| --- | --- |
+| `Row`, `Column` | `Row`, `Column` |
+| `Container`, `SizedBox`, `Spacer` | `Container`, `SizedBox`, `Spacer` |
+| `Expanded`, `Flexible` | `Expanded`, `Flexible` |
+| `Center`, `Align`, `AspectRatio` | `Center`, `Align`, `AspectRatio` |
+| `Wrap`, `Stack`, `Positioned` | `Wrap`, `Stack`, `Positioned` |
+| `SingleChildScrollView`, `ListView`, `GridView` | Same |
+| `MediaQuery` | `MediaQuery` |
+
+### Display
+
+| Widget | Flutter equivalent |
+| --- | --- |
+| `Text`, `Card`, `Divider`, `Image`, `Visibility` | Same |
+
+### Input & forms
+
+| Widget | Flutter equivalent |
+| --- | --- |
+| `Button` | `FilledButton` / `OutlinedButton` / `TextButton` |
+| `TextField`, `TextFormField`, `Form` | Same |
+| `Checkbox`, `CheckboxFormField` | Same |
+| `Radio`, `RadioGroup`, `RadioGroupFormField` | Same |
+| `Switch`, `Dropdown`, `DropdownFormField` | Same |
+
+### Overlays
+
+| Widget | Flutter equivalent |
+| --- | --- |
+| `OverlayContainer` | Overlay host |
+| `Dialog`, `AlertDialog` | Same |
+| `ModalBottomSheet`, `SnackBar` | Same |
+| `Tooltip`, `Popover`, `Menu` | Same |
+
+### App structure
+
+| Widget | Flutter equivalent |
+| --- | --- |
+| `AppShell` | `Scaffold` |
+| `AppBar` | `AppBar` |
+| `Drawer` | `Drawer` |
+| `SideSheet` | Companion panel |
+
+Shared enums and types (`MainAxisAlignment`, `CrossAxisAlignment`, `EdgeInsets`, `ButtonVariant`, etc.) are exported from the package entry point.
+
+## Playground
+
+This repo includes a Qwik City playground at `src/routes/index.tsx` that demos every widget. Run it locally:
+
+```bash
+npm install
+npm start        # dev server with SSR
+npm run preview  # production preview
 ```
 
-> Note: during dev mode, Vite may request a significant number of `.js` files. This does not represent a Qwik production build.
+## Library build
 
-## Preview
+Build the publishable library (ESM + CJS + types):
 
-The preview command will create a production build of the client modules, a production build of `src/entry.preview.tsx`, and run a local server. The preview server is only for convenience to preview a production build locally and should not be used as a production server.
-
-```shell
-npm run preview # or `yarn preview`
+```bash
+npm run build
 ```
 
-## Production
+Output lands in `lib/` and `lib-types/`.
 
-The production build will generate client and server modules by running both client and server build commands. The build command will use Typescript to run a type check on the source code.
+## Scripts
 
-```shell
-npm run build # or `yarn build`
+| Command | Description |
+| --- | --- |
+| `npm start` | Start playground dev server |
+| `npm run dev` | Dev server without auto-open |
+| `npm run build` | Build library + type declarations |
+| `npm run build.playground` | Build playground app |
+| `npm test` | Run Vitest unit tests |
+| `npm run lint` | ESLint |
+| `npm run fmt` | Prettier write |
+| `npm run release` | Publish via `np` |
+
+## Project structure
+
 ```
+├── src/
+│   ├── lib/           # Public widgets (layout, forms, overlays, theme)
+│   ├── components/    # App-structure widgets (AppShell, AppBar, Drawer, …)
+│   ├── routes/        # Playground pages
+│   └── index.ts       # Public package entry (semver surface)
+├── docs/
+│   └── API_DESIGN.md  # Full API specification
+├── tests/             # Vitest component tests
+└── lib/               # Built library output (after `npm run build`)
+```
+
+## API design
+
+The full public API is documented in [`docs/API_DESIGN.md`](docs/API_DESIGN.md). Design goals include Flutter-first naming, semantic HTML, accessibility by default, SSR-friendly markup, and minimal client-side overhead.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
