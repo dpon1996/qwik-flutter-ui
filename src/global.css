@@ -1,0 +1,8 @@
+/**
+ * App-wide baseline — full-height document for AppShell viewport layout (§91).
+ */
+html,
+body {
+  height: 100%;
+  margin: 0;
+}

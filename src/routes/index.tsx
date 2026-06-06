@@ -2,6 +2,10 @@ import { $, component$, useSignal, type Signal } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
 import { AppBar } from "~/components/app-bar";
 import { AppShell } from "~/components/app-shell";
+import {
+  BottomNavigationBar,
+  BottomNavigationItem,
+} from "~/components/bottom-navigation-bar";
 import { Drawer } from "~/components/drawer";
 import { SideSheet } from "~/components/side-sheet";
 import type { FormValues } from "~/lib/_shared";
@@ -98,6 +102,7 @@ export default component$(() => {
   const popoverOpen = useSignal(false);
   const menuStatus = useSignal("No menu action yet.");
   const snackStatus = useSignal("No snack enqueued yet.");
+  const bottomNavValue = useSignal("home");
 
   snackDemo.status = snackStatus;
   menuDemo.status = menuStatus;
@@ -120,6 +125,10 @@ export default component$(() => {
 
   const closeSideSheet$ = $(() => {
     sideSheetOpen.value = false;
+  });
+
+  const onBottomNavChange$ = $((next: string) => {
+    bottomNavValue.value = next;
   });
 
   const onFormSubmit = $((values: FormValues) => {
@@ -252,17 +261,43 @@ export default component$(() => {
               </Button>,
             ]}
           />
+          <BottomNavigationBar
+            q:slot="bottomNavigationBar"
+            aria-label="Primary destinations"
+            value={bottomNavValue.value}
+            onChange$={onBottomNavChange$}
+          >
+            <BottomNavigationItem
+              value="home"
+              label="Home"
+              icon={<span>⌂</span>}
+            />
+            <BottomNavigationItem
+              value="search"
+              label="Search"
+              icon={<span>⌕</span>}
+            />
+            <BottomNavigationItem
+              value="profile"
+              label="Profile"
+              icon={<span>👤</span>}
+            />
+          </BottomNavigationBar>
           <Container padding={24}>
             <Column gap={24}>
-              <Text as="h2">App Structure — AppShell + AppBar + Drawer + SideSheet</Text>
+              <Text as="h2">
+                App Structure — AppShell + AppBar + Drawer + SideSheet +
+                BottomNavigationBar
+              </Text>
               <Text>
                 Page chrome uses <code>AppShell</code> for <code>AppBar</code>,
-                plus modal <code>Drawer</code> and edge-overlay{" "}
-                <code>SideSheet</code> inside <code>OverlayContainer</code>{" "}
-                (§91–§97). Open the drawer with ☰; toggle the right-side filter
-                panel with Filters in the app bar. The side sheet overlays page
-                content — no backdrop or focus trap. Panel state:{" "}
-                {sideSheetOpen.value ? "open" : "closed"}.
+                <code>BottomNavigationBar</code>, plus modal <code>Drawer</code>{" "}
+                and edge-overlay <code>SideSheet</code> inside{" "}
+                <code>OverlayContainer</code> (§91–§99). Open the drawer with ☰;
+                toggle the right-side filter panel with Filters in the app bar.
+                The side sheet overlays page content — no backdrop or focus
+                trap. Panel state: {sideSheetOpen.value ? "open" : "closed"}.
+                Bottom nav selection (no routing): {bottomNavValue.value}.
               </Text>
               <Button type="button" onClick$={toggleSideSheet$}>
                 Toggle filters panel (main content)
