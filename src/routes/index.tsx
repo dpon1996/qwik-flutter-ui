@@ -16,6 +16,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle } from "~/lib/dialog"
 import { Dropdown } from "~/lib/dropdown";
 import { DropdownFormField } from "~/lib/dropdown-form-field";
 import { Form } from "~/lib/form";
+import { Menu, MenuDivider, MenuItem } from "~/lib/menu";
 import { ModalBottomSheet } from "~/lib/modal-bottom-sheet";
 import { OverlayContainer } from "~/lib/overlay";
 import { Popover } from "~/lib/popover";
@@ -38,6 +39,29 @@ const COUNTRIES = [
 const snackDemo = {
   status: null as Signal<string> | null,
 };
+
+/** Playground-only ref for menu selection demo. */
+const menuDemo = {
+  status: null as Signal<string> | null,
+};
+
+const onMenuEdit$ = $(() => {
+  if (menuDemo.status) {
+    menuDemo.status.value = "Selected: Edit";
+  }
+});
+
+const onMenuCopy$ = $(() => {
+  if (menuDemo.status) {
+    menuDemo.status.value = "Selected: Copy";
+  }
+});
+
+const onMenuDelete$ = $(() => {
+  if (menuDemo.status) {
+    menuDemo.status.value = "Selected: Delete";
+  }
+});
 
 const onUndoSnackAction$ = $(() => {
   if (snackDemo.status) {
@@ -66,9 +90,11 @@ export default component$(() => {
   const sheetOpen = useSignal(false);
   const stackDialogOpen = useSignal(false);
   const popoverOpen = useSignal(false);
+  const menuStatus = useSignal("No menu action yet.");
 
   const snackStatus = useSignal("No snack enqueued yet.");
   snackDemo.status = snackStatus;
+  menuDemo.status = menuStatus;
 
   const onFormSubmit = $((values: FormValues) => {
     submitResult.value = JSON.stringify(values, null, 2);
@@ -227,6 +253,21 @@ export default component$(() => {
                 <Text>Uncontrolled click trigger.</Text>
               </Container>
             </Popover>
+
+            <Text as="h2">Overlays — Menu</Text>
+
+            <Menu>
+              <Button q:slot="trigger" type="button">
+                Open menu
+              </Button>
+              <MenuItem onSelect$={onMenuEdit$}>Edit</MenuItem>
+              <MenuItem onSelect$={onMenuCopy$}>Copy</MenuItem>
+              <MenuDivider />
+              <MenuItem disabled>Disabled item</MenuItem>
+              <MenuItem onSelect$={onMenuDelete$}>Delete</MenuItem>
+            </Menu>
+
+            <Text>{menuStatus.value}</Text>
 
             <Text as="h2">Selection controls + Form</Text>
 

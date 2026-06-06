@@ -1,0 +1,52 @@
+/**
+ * `Menu` list surface styles (§83, OV15 widget-owned motion).
+ */
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 10rem;
+  /* Cancel Popover panel padding so the menu fills the surface edge-to-edge. */
+  margin: -0.75rem;
+  padding: 0.25rem;
+  outline: none;
+  overflow: hidden;
+  border-radius: calc(0.5rem - 1px);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  outline: none;
+}
+
+.item:focus-visible {
+  background: var(--qfu-color-surface-variant, rgb(0 0 0 / 0.06));
+}
+
+.item:hover:not([aria-disabled="true"]) {
+  background: var(--qfu-color-surface-variant, rgb(0 0 0 / 0.04));
+}
+
+.item[aria-disabled="true"] {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.divider {
+  height: 1px;
+  margin: 0.125rem 0.75rem;
+  border: none;
+  background: var(--qfu-color-outline, #c8c8c8);
+}
