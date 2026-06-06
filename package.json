@@ -59,6 +59,8 @@
     "fmt": "prettier --write .",
     "fmt.check": "prettier --check .",
     "lint": "eslint \"src/**/*.ts*\"",
+    "test": "vitest run",
+    "test.watch": "vitest",
     "preview": "qwik build preview && vite preview --open",
     "release": "np --no-tests",
     "start": "vite --open --mode ssr",
@@ -76,6 +78,7 @@
     "eslint": "9.32.0",
     "eslint-plugin-qwik": "^1.20.0",
     "globals": "16.4.0",
+    "happy-dom": "^20.10.1",
     "np": "^10.0.0",
     "prettier": "3.6.2",
     "typescript": "5.4.5",
@@ -83,6 +86,7 @@
     "typescript-plugin-css-modules": "latest",
     "undici": "*",
     "vite": "7.3.1",
-    "vite-tsconfig-paths": "^4.2.1"
+    "vite-tsconfig-paths": "^4.2.1",
+    "vitest": "^4.1.8"
   }
 }

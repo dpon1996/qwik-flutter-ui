@@ -1,5 +1,8 @@
 import { $, component$, useSignal, type Signal } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
+import { AppBar } from "~/components/app-bar";
+import { AppShell } from "~/components/app-shell";
+import { Drawer } from "~/components/drawer";
 import type { FormValues } from "~/lib/_shared";
 import { OverlayPlacement } from "~/lib/_shared";
 import {
@@ -86,6 +89,7 @@ const enqueueActionSnack = $(() => {
 
 export default component$(() => {
   const submitResult = useSignal<string | null>(null);
+  const drawerOpen = useSignal(false);
   const alertOpen = useSignal(false);
   const sheetOpen = useSignal(false);
   const stackDialogOpen = useSignal(false);
@@ -98,6 +102,14 @@ export default component$(() => {
 
   const onFormSubmit = $((values: FormValues) => {
     submitResult.value = JSON.stringify(values, null, 2);
+  });
+
+  const onDrawerOpenChange = $((next: boolean) => {
+    drawerOpen.value = next;
+  });
+
+  const openDrawer = $(() => {
+    drawerOpen.value = true;
   });
 
   const onAlertOpenChange = $((next: boolean) => {
@@ -144,208 +156,257 @@ export default component$(() => {
     <ThemeProvider inherit={false} theme={{}}>
       <OverlayContainer>
         <SnackBarHost />
-        <Container padding={24}>
-          <Column gap={24}>
-            <Text as="h1">qwik-flutter-ui playground</Text>
-
-            <Button type="button" onClick$={openAlertDialog}>
-              Delete item
-            </Button>
-
-            <AlertDialog open={alertOpen.value} onOpenChange$={onAlertOpenChange}>
-              <AlertDialogTitle>Delete this item?</AlertDialogTitle>
-              <AlertDialogContent>
-                <Text>This action cannot be undone.</Text>
-              </AlertDialogContent>
-              <AlertDialogActions>
-                <Button type="button" onClick$={() => (alertOpen.value = false)}>
-                  Cancel
+        <Drawer open={drawerOpen.value} onOpenChange$={onDrawerOpenChange}>
+          <nav aria-label="Main">
+            <Container padding={16}>
+              <Column gap={8}>
+                <Text as="h2">Navigation</Text>
+                <Button type="button" onClick$={() => (drawerOpen.value = false)}>
+                  Home
                 </Button>
-                <Button type="button" onClick$={() => (alertOpen.value = false)}>
-                  Delete
+                <Button type="button" onClick$={() => (drawerOpen.value = false)}>
+                  Components
                 </Button>
-              </AlertDialogActions>
-            </AlertDialog>
-
-            <Text as="h2">Overlays — ModalBottomSheet</Text>
-
-            <Button type="button" onClick$={openSheet}>
-              Open bottom sheet
-            </Button>
-
-            <ModalBottomSheet
-              open={sheetOpen.value}
-              onOpenChange$={onSheetOpenChange}
-              aria-labelledby="sheet-title"
-              aria-describedby="sheet-desc"
-            >
-              <Container padding={24}>
-                <Column gap={16}>
-                  <Text as="h3" id="sheet-title">
-                    Sheet options
-                  </Text>
-                  <Text id="sheet-desc">Choose an action below.</Text>
-                  <Button type="button" onClick$={openStackDialog}>
-                    Open dialog over sheet
-                  </Button>
-                  <Button type="button" onClick$={() => (sheetOpen.value = false)}>
-                    Close sheet
-                  </Button>
-                </Column>
-              </Container>
-            </ModalBottomSheet>
-
-            <Dialog
-              open={stackDialogOpen.value}
-              onOpenChange$={onStackDialogOpenChange}
-              labelledBy="stack-dialog-title"
-            >
-              <DialogTitle id="stack-dialog-title">Dialog over sheet</DialogTitle>
-              <DialogContent>
-                <Text>Only this dialog should receive Escape while open.</Text>
-              </DialogContent>
-              <DialogActions>
-                <Button type="button" onClick$={() => (stackDialogOpen.value = false)}>
-                  Close dialog
+                <Button type="button" onClick$={() => (drawerOpen.value = false)}>
+                  Settings
                 </Button>
-              </DialogActions>
-            </Dialog>
-
-            <Text as="h2">Overlays — SnackBar (OV14)</Text>
-
-            <Button type="button" onClick$={enqueueSavedSnack}>
-              enqueueSnackBar$ — Saved
-            </Button>
-            <Button type="button" onClick$={enqueueQueuedSnacks}>
-              enqueueSnackBar$ — queue A + B
-            </Button>
-            <Button type="button" onClick$={enqueueActionSnack}>
-              enqueueSnackBar$ — with action
-            </Button>
-            <Text>{snackStatus.value}</Text>
-
-            <Text as="h2">Overlays — Tooltip</Text>
-
-            <Tooltip content="Helpful hint" placement={OverlayPlacement.top}>
-              <Button type="button">Hover or focus me</Button>
-            </Tooltip>
-
-            <Text as="h2">Overlays — Popover</Text>
-
-            <Popover
-              open={popoverOpen.value}
-              onOpenChange$={onPopoverOpenChange}
-              placement={OverlayPlacement.bottom}
-            >
-              <Button q:slot="trigger" type="button">
-                Controlled popover
-              </Button>
-              <Container padding={12}>
-                <Text>Click outside or press Escape to dismiss.</Text>
-              </Container>
-            </Popover>
-
-            <Popover placement={OverlayPlacement.end}>
-              <Button q:slot="trigger" type="button">
-                Click popover
-              </Button>
-              <Container padding={12}>
-                <Text>Uncontrolled click trigger.</Text>
-              </Container>
-            </Popover>
-
-            <Text as="h2">Overlays — Menu</Text>
-
-            <Menu>
-              <Button q:slot="trigger" type="button">
-                Open menu
-              </Button>
-              <MenuItem onSelect$={onMenuEdit$}>Edit</MenuItem>
-              <MenuItem onSelect$={onMenuCopy$}>Copy</MenuItem>
-              <MenuDivider />
-              <MenuItem disabled>Disabled item</MenuItem>
-              <MenuItem onSelect$={onMenuDelete$}>Delete</MenuItem>
-            </Menu>
-
-            <Text>{menuStatus.value}</Text>
-
-            <Text as="h2">Selection controls + Form</Text>
-
-            <Form onSubmit$={onFormSubmit}>
-              <Column gap={16}>
-                <TextField
-                  name="name"
-                  decoration={{ label: "Name" }}
-                  required
-                  outlineColor="red"
-                  focusOutlineColor="black"
-                />
-
-                <CheckboxFormField
-                  name="terms"
-                  required
-                  defaultChecked={true}
-                  decoration={{
-                    label: "I agree to the terms",
-                    helperText: "You must accept to continue",
-                  }}
-                  validator$={(checked) =>
-                    checked ? undefined : "Please accept the terms"
-                  }
-                />
-                <Switch
-                  name="notifications"
-                  label="Push notifications"
-                  defaultChecked={true}
-                />
-                <RadioGroupFormField
-                  name="plan"
-                  required
-                  defaultValue="free"
-                  decoration={{
-                    label: "Billing plan",
-                    helperText: "Choose a billing plan",
-                  }}
-                  validator$={(v) =>
-                    v === "" ? "Please select a plan" : undefined
-                  }
-                >
-                  <Column gap={8}>
-                    <Radio value="free" label="Free" />
-                    <Radio value="pro" label="Pro" />
-                  </Column>
-                </RadioGroupFormField>
-                <Dropdown
-                  options={COUNTRIES}
-                  placeholder="Select a country"
-                  required
-                  defaultValue="us"
-                />
-                <DropdownFormField
-                  name="country"
-                  placeholder="Select a country"
-                  required
-                  defaultValue="us"
-                  options={COUNTRIES}
-                  decoration={{
-                    label: "Country",
-                    helperText: "Shipping address country",
-                  }}
-                  validator$={(v) =>
-                    v === "" ? "Please select a country" : undefined
-                  }
-                />
-                <Button type="submit">Submit</Button>
               </Column>
-            </Form>
+            </Container>
+          </nav>
+        </Drawer>
+        <AppShell
+          appBar={
+            <AppBar
+              leading={
+                <Button
+                  type="button"
+                  aria-label="Open navigation menu"
+                  aria-expanded={drawerOpen.value}
+                  onClick$={openDrawer}
+                >
+                  ☰
+                </Button>
+              }
+              title={<Text as="h1">qwik-flutter-ui playground</Text>}
+              actions={[
+                <Button key="docs" type="button" aria-label="Documentation">
+                  Docs
+                </Button>,
+              ]}
+            />
+          }
+        >
+          <Container padding={24}>
+            <Column gap={24}>
+              <Text as="h2">App Structure — AppShell + AppBar + Drawer</Text>
+              <Text>
+                Page chrome is rendered via <code>AppShell.appBar</code>,{" "}
+                <code>AppBar</code>, and the modal <code>Drawer</code> (§91–§95).
+                Use the menu button in the app bar to open the drawer; dismiss
+                with Escape, backdrop click, or a nav item.
+              </Text>
 
-            <Text>
-              {submitResult.value === null
-                ? "Submit the form to see FormValues here."
-                : submitResult.value}
-            </Text>
-          </Column>
-        </Container>
+              <Text as="h2">Overlays — AlertDialog</Text>
+
+              <Button type="button" onClick$={openAlertDialog}>
+                Delete item
+              </Button>
+
+              <AlertDialog open={alertOpen.value} onOpenChange$={onAlertOpenChange}>
+                <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+                <AlertDialogContent>
+                  <Text>This action cannot be undone.</Text>
+                </AlertDialogContent>
+                <AlertDialogActions>
+                  <Button type="button" onClick$={() => (alertOpen.value = false)}>
+                    Cancel
+                  </Button>
+                  <Button type="button" onClick$={() => (alertOpen.value = false)}>
+                    Delete
+                  </Button>
+                </AlertDialogActions>
+              </AlertDialog>
+
+              <Text as="h2">Overlays — ModalBottomSheet</Text>
+
+              <Button type="button" onClick$={openSheet}>
+                Open bottom sheet
+              </Button>
+
+              <ModalBottomSheet
+                open={sheetOpen.value}
+                onOpenChange$={onSheetOpenChange}
+                aria-labelledby="sheet-title"
+                aria-describedby="sheet-desc"
+              >
+                <Container padding={24}>
+                  <Column gap={16}>
+                    <Text as="h3" id="sheet-title">
+                      Sheet options
+                    </Text>
+                    <Text id="sheet-desc">Choose an action below.</Text>
+                    <Button type="button" onClick$={openStackDialog}>
+                      Open dialog over sheet
+                    </Button>
+                    <Button type="button" onClick$={() => (sheetOpen.value = false)}>
+                      Close sheet
+                    </Button>
+                  </Column>
+                </Container>
+              </ModalBottomSheet>
+
+              <Dialog
+                open={stackDialogOpen.value}
+                onOpenChange$={onStackDialogOpenChange}
+                labelledBy="stack-dialog-title"
+              >
+                <DialogTitle id="stack-dialog-title">Dialog over sheet</DialogTitle>
+                <DialogContent>
+                  <Text>Only this dialog should receive Escape while open.</Text>
+                </DialogContent>
+                <DialogActions>
+                  <Button type="button" onClick$={() => (stackDialogOpen.value = false)}>
+                    Close dialog
+                  </Button>
+                </DialogActions>
+              </Dialog>
+
+              <Text as="h2">Overlays — SnackBar (OV14)</Text>
+
+              <Button type="button" onClick$={enqueueSavedSnack}>
+                enqueueSnackBar$ — Saved
+              </Button>
+              <Button type="button" onClick$={enqueueQueuedSnacks}>
+                enqueueSnackBar$ — queue A + B
+              </Button>
+              <Button type="button" onClick$={enqueueActionSnack}>
+                enqueueSnackBar$ — with action
+              </Button>
+              <Text>{snackStatus.value}</Text>
+
+              <Text as="h2">Overlays — Tooltip</Text>
+
+              <Tooltip content="Helpful hint" placement={OverlayPlacement.top}>
+                <Button type="button">Hover or focus me</Button>
+              </Tooltip>
+
+              <Text as="h2">Overlays — Popover</Text>
+
+              <Popover
+                open={popoverOpen.value}
+                onOpenChange$={onPopoverOpenChange}
+                placement={OverlayPlacement.bottom}
+              >
+                <Button q:slot="trigger" type="button">
+                  Controlled popover
+                </Button>
+                <Container padding={12}>
+                  <Text>Click outside or press Escape to dismiss.</Text>
+                </Container>
+              </Popover>
+
+              <Popover placement={OverlayPlacement.end}>
+                <Button q:slot="trigger" type="button">
+                  Click popover
+                </Button>
+                <Container padding={12}>
+                  <Text>Uncontrolled click trigger.</Text>
+                </Container>
+              </Popover>
+
+              <Text as="h2">Overlays — Menu</Text>
+
+              <Menu>
+                <Button q:slot="trigger" type="button">
+                  Open menu
+                </Button>
+                <MenuItem onSelect$={onMenuEdit$}>Edit</MenuItem>
+                <MenuItem onSelect$={onMenuCopy$}>Copy</MenuItem>
+                <MenuDivider />
+                <MenuItem disabled>Disabled item</MenuItem>
+                <MenuItem onSelect$={onMenuDelete$}>Delete</MenuItem>
+              </Menu>
+
+              <Text>{menuStatus.value}</Text>
+
+              <Text as="h2">Selection controls + Form</Text>
+
+              <Form onSubmit$={onFormSubmit}>
+                <Column gap={16}>
+                  <TextField
+                    name="name"
+                    decoration={{ label: "Name" }}
+                    required
+                    outlineColor="red"
+                    focusOutlineColor="black"
+                  />
+
+                  <CheckboxFormField
+                    name="terms"
+                    required
+                    defaultChecked={true}
+                    decoration={{
+                      label: "I agree to the terms",
+                      helperText: "You must accept to continue",
+                    }}
+                    validator$={(checked) =>
+                      checked ? undefined : "Please accept the terms"
+                    }
+                  />
+                  <Switch
+                    name="notifications"
+                    label="Push notifications"
+                    defaultChecked={true}
+                  />
+                  <RadioGroupFormField
+                    name="plan"
+                    required
+                    defaultValue="free"
+                    decoration={{
+                      label: "Billing plan",
+                      helperText: "Choose a billing plan",
+                    }}
+                    validator$={(v) =>
+                      v === "" ? "Please select a plan" : undefined
+                    }
+                  >
+                    <Column gap={8}>
+                      <Radio value="free" label="Free" />
+                      <Radio value="pro" label="Pro" />
+                    </Column>
+                  </RadioGroupFormField>
+                  <Dropdown
+                    options={COUNTRIES}
+                    placeholder="Select a country"
+                    required
+                    defaultValue="us"
+                  />
+                  <DropdownFormField
+                    name="country"
+                    placeholder="Select a country"
+                    required
+                    defaultValue="us"
+                    options={COUNTRIES}
+                    decoration={{
+                      label: "Country",
+                      helperText: "Shipping address country",
+                    }}
+                    validator$={(v) =>
+                      v === "" ? "Please select a country" : undefined
+                    }
+                  />
+                  <Button type="submit">Submit</Button>
+                </Column>
+              </Form>
+
+              <Text>
+                {submitResult.value === null
+                  ? "Submit the form to see FormValues here."
+                  : submitResult.value}
+              </Text>
+            </Column>
+          </Container>
+        </AppShell>
       </OverlayContainer>
     </ThemeProvider>
   );

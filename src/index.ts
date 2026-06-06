@@ -53,3 +53,6 @@ export * from "./lib/snack-bar";
 export * from "./lib/tooltip";
 export * from "./lib/popover";
 export * from "./lib/menu";
+export * from "./components/app-shell";
+export * from "./components/app-bar";
+export * from "./components/drawer";

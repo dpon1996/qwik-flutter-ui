@@ -1,0 +1,49 @@
+/*
+ * AppBar — top application chrome toolbar (Flutter AppBar equivalent).
+ * See docs/API_DESIGN.md §93.
+ *
+ * Flex row: optional leading, flex-growing title, end-aligned actions.
+ */
+
+.appBar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  background-color: var(--qfu-color-surface, transparent);
+  color: var(--qfu-color-on-surface, inherit);
+}
+
+.leading {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+}
+
+.title {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+  gap: 4px;
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}

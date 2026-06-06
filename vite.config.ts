@@ -25,6 +25,18 @@ const { dependencies = {}, devDependencies = {} } = pkg as any as {
 };
 errorOnDuplicatesPkgDeps(devDependencies, dependencies);
 
+const qwikTestDefine = {
+  "globalThis.qTest": true,
+  "globalThis.qDev": true,
+};
+
+const vitestConfig: UserConfig = {
+  test: {
+    include: ["tests/**/*.spec.tsx"],
+  },
+  define: qwikTestDefine,
+};
+
 export default defineConfig(({ mode }): UserConfig => {
   if (mode === "lib") {
     return {
@@ -46,6 +58,7 @@ export default defineConfig(({ mode }): UserConfig => {
         emptyOutDir: true,
       },
       plugins: [qwikVite(), tsconfigPaths({ root: "." })],
+      ...vitestConfig,
     };
   }
 
@@ -64,6 +77,7 @@ export default defineConfig(({ mode }): UserConfig => {
         "Cache-Control": "public, max-age=600",
       },
     },
+    ...vitestConfig,
   };
 });
 

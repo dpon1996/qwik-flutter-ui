@@ -1,0 +1,50 @@
+/*
+ * Drawer — modal start-edge navigation panel (Flutter Drawer equivalent).
+ * See docs/API_DESIGN.md §95.
+ */
+
+.closed {
+  display: none;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgb(0 0 0 / 0.4);
+  cursor: default;
+}
+
+.panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 304px;
+  max-width: 100%;
+  overflow: auto;
+  background: var(--qfu-color-surface, #fff);
+  color: var(--qfu-color-on-surface, #1a1a1a);
+  box-shadow:
+    0 8px 10px -5px rgb(0 0 0 / 0.2),
+    0 16px 24px 2px rgb(0 0 0 / 0.14),
+    0 6px 30px 5px rgb(0 0 0 / 0.12);
+  transform: translateX(0);
+  transition: transform 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    transition: none;
+  }
+}

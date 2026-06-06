@@ -1,0 +1,40 @@
+/*
+ * AppShell — page structure shell (Flutter Scaffold equivalent).
+ * See docs/API_DESIGN.md §91.
+ *
+ * Flex column shell: optional chrome regions + flex-growing main.
+ * `min-height: 0` on the body row and main avoids flex overflow clipping.
+ */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100%;
+}
+
+.appBar {
+  flex-shrink: 0;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.drawer,
+.sideSheet {
+  flex-shrink: 0;
+}
+
+.main {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.bottomNavigationBar {
+  flex-shrink: 0;
+}
