@@ -18,6 +18,7 @@ import { DropdownFormField } from "~/lib/dropdown-form-field";
 import { Form } from "~/lib/form";
 import { ModalBottomSheet } from "~/lib/modal-bottom-sheet";
 import { OverlayContainer } from "~/lib/overlay";
+import { Popover } from "~/lib/popover";
 import { Radio } from "~/lib/radio";
 import { RadioGroupFormField } from "~/lib/radio-group-form-field";
 import { enqueueSnackBar, SnackBarHost } from "~/lib/snack-bar";
@@ -64,6 +65,7 @@ export default component$(() => {
   const alertOpen = useSignal(false);
   const sheetOpen = useSignal(false);
   const stackDialogOpen = useSignal(false);
+  const popoverOpen = useSignal(false);
 
   const snackStatus = useSignal("No snack enqueued yet.");
   snackDemo.status = snackStatus;
@@ -94,6 +96,10 @@ export default component$(() => {
 
   const onStackDialogOpenChange = $((next: boolean) => {
     stackDialogOpen.value = next;
+  });
+
+  const onPopoverOpenChange = $((next: boolean) => {
+    popoverOpen.value = next;
   });
 
   const enqueueSavedSnack = $(() => {
@@ -197,6 +203,30 @@ export default component$(() => {
             <Tooltip content="Helpful hint" placement={OverlayPlacement.top}>
               <Button type="button">Hover or focus me</Button>
             </Tooltip>
+
+            <Text as="h2">Overlays — Popover</Text>
+
+            <Popover
+              open={popoverOpen.value}
+              onOpenChange$={onPopoverOpenChange}
+              placement={OverlayPlacement.bottom}
+            >
+              <Button q:slot="trigger" type="button">
+                Controlled popover
+              </Button>
+              <Container padding={12}>
+                <Text>Click outside or press Escape to dismiss.</Text>
+              </Container>
+            </Popover>
+
+            <Popover placement={OverlayPlacement.end}>
+              <Button q:slot="trigger" type="button">
+                Click popover
+              </Button>
+              <Container padding={12}>
+                <Text>Uncontrolled click trigger.</Text>
+              </Container>
+            </Popover>
 
             <Text as="h2">Selection controls + Form</Text>
 

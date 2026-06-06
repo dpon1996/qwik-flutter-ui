@@ -51,3 +51,4 @@ export * from "./lib/alert-dialog";
 export * from "./lib/modal-bottom-sheet";
 export * from "./lib/snack-bar";
 export * from "./lib/tooltip";
+export * from "./lib/popover";
