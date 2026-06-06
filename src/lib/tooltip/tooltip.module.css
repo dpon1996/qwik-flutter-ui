@@ -1,0 +1,53 @@
+/**
+ * `Tooltip` surface styles (§81, OV15 widget-owned motion).
+ */
+
+.portal {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: transparent;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 1;
+  max-width: min(16rem, calc(100vw - 1rem));
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.25rem;
+  background: var(--qfu-color-inverse-surface, #616161);
+  color: var(--qfu-color-on-inverse-surface, #fff);
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  box-shadow:
+    0 2px 4px -1px rgb(0 0 0 / 0.2),
+    0 4px 5px 0 rgb(0 0 0 / 0.14);
+  pointer-events: none;
+}
+
+.triggerWrap {
+  display: inline-flex;
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tooltip {
+    animation: qfu-tooltip-enter 120ms ease-out;
+  }
+}
+
+@keyframes qfu-tooltip-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltip {
+    animation: none;
+  }
+}

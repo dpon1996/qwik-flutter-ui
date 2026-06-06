@@ -137,9 +137,11 @@ export interface TooltipProps extends BaseProps {
   content: string | JSXOutput;
   open?: boolean;
   defaultOpen?: boolean;
-  /** Default ~700ms (§81). */
+  onOpenChange$?: QRL<(open: boolean) => void>;
+  /** Default ~700ms (§81). Applies to hover and focus. */
   delayDuration?: number;
   placement?: OverlayPlacement;
+  /** Default: hover + focus when omitted (§81). */
   trigger?: OverlayTrigger;
 }
 

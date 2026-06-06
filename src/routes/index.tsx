@@ -1,6 +1,7 @@
 import { $, component$, useSignal, type Signal } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
 import type { FormValues } from "~/lib/_shared";
+import { OverlayPlacement } from "~/lib/_shared";
 import {
   AlertDialog,
   AlertDialogActions,
@@ -24,6 +25,7 @@ import { Switch } from "~/lib/switch";
 import { Text } from "~/lib/text";
 import { TextField } from "~/lib/text-field";
 import { ThemeProvider } from "~/lib/theme";
+import { Tooltip } from "~/lib/tooltip";
 
 const COUNTRIES = [
   { value: "us", label: "United States" },
@@ -189,6 +191,12 @@ export default component$(() => {
               enqueueSnackBar$ — with action
             </Button>
             <Text>{snackStatus.value}</Text>
+
+            <Text as="h2">Overlays — Tooltip</Text>
+
+            <Tooltip content="Helpful hint" placement={OverlayPlacement.top}>
+              <Button type="button">Hover or focus me</Button>
+            </Tooltip>
 
             <Text as="h2">Selection controls + Form</Text>
 
