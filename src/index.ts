@@ -48,3 +48,4 @@ export * from "./lib/theme";
 export * from "./lib/overlay";
 export * from "./lib/dialog";
 export * from "./lib/alert-dialog";
+export * from "./lib/modal-bottom-sheet";

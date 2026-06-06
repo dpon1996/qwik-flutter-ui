@@ -92,8 +92,12 @@ export interface AlertDialogActionsProps extends BaseProps {}
 
 /** Props for `ModalBottomSheet` (§79.1; static open/closed v1.7). */
 export interface ModalBottomSheetProps extends BaseProps, OverlayOpenProps {
+  /** Default `true`. */
   dismissOnEscape?: boolean;
+  /** Default `true`. */
   dismissOnBackdropClick?: boolean;
+  /** Default `true`. Restore focus to trigger on close (§84). */
+  restoreFocus?: boolean;
 }
 
 /* ----------------------------------------------------------------- */
