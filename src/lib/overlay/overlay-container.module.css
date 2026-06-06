@@ -1,0 +1,14 @@
+/**
+ * `OverlayContainer` — host for portaled overlay layers (§74, OV1).
+ */
+
+.root {
+  /* Pass-through wrapper; app content uses normal document flow. */
+}
+
+.host {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--qfu-overlay-z-base, 1000);
+}

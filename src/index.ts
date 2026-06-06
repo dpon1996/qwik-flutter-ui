@@ -45,3 +45,6 @@ export * from "./lib/switch";
 export * from "./lib/dropdown";
 export * from "./lib/dropdown-form-field";
 export * from "./lib/theme";
+export * from "./lib/overlay";
+export * from "./lib/dialog";
+export * from "./lib/alert-dialog";

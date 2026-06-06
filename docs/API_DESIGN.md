@@ -7220,15 +7220,19 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 
 > **Spec:** §73–§89. Decisions **OV1–OV15** approved (§43).
 
-- [ ] Extend `_shared/enums.ts` — `OverlayPlacement`, `OverlayTrigger`, `OverlayDismissReason` (§1.32–§1.34).
-- [ ] Extend `_shared/types.ts` — `OverlayDismissReason` type usage, overlay open-change types (§76).
-- [ ] `src/lib/overlay/` — `OverlayContainer` public; `overlay-portal`, `use-overlay-layer`, `focus-trap` **not exported** (§74–§75).
-- [ ] `src/lib/dialog/` — §77.
-- [ ] `src/lib/alert-dialog/` — §78.
+- [x] Extend `_shared/enums.ts` — `OverlayPlacement`, `OverlayTrigger`, `OverlayDismissReason` (§1.32–§1.34).
+- [x] Extend `_shared/overlay-types.ts` — `OverlayOpenChangeDetail`, `OverlayOpenProps`, widget prop types (§76–§83).
+- [x] `src/lib/overlay/` — `OverlayContainer` public; layer context + `use-overlay-layer` **not exported** (§74–§75, Phase 2).
+- [x] `overlay-portal.tsx` + `use-overlay-layer` (§75, Phase 3) — **not exported**.
+- [x] `focus-trap.ts` (§74, OV3 — used by `Dialog`).
+- [x] `src/lib/dialog/` — §77 (`Dialog`, `DialogTitle`, `DialogContent`, `DialogActions`).
+- [x] `src/lib/alert-dialog/` — §78 (wraps `Dialog`; no separate overlay stack).
 - [ ] `src/lib/modal-bottom-sheet/` — §79 (static sheet only).
 - [ ] `src/lib/snack-bar/` — `SnackBarHost`, `enqueueSnackBar$`, declarative `SnackBar` (§80).
 - [ ] `src/lib/tooltip/`, `popover/`, `menu/` — §81–§83.
 - [ ] OV13 fallback container + dev warning; OV12 SSR `defaultOpen` warning.
-- [ ] Export overlay widgets per §73.2.1 — **not** `OverlayPortal` (§0.10).
+- [x] Export `OverlayContainer` from `src/index.ts` (§0.10) — **not** `OverlayPortal` / context.
+- [x] Export `Dialog` + subcomponents from `src/index.ts` (§0.10).
+- [ ] Export remaining overlay widgets per §73.2.1 (§0.10).
 - [ ] Playground overlay demos: Dialog, AlertDialog, bottom sheet, SnackBar enqueue, Tooltip, Menu, nested dialog (OV7).
 - [ ] `axe` on overlay screen (§84).

@@ -317,3 +317,34 @@ export const InputMode = {
   decimal: "decimal",
 } as const;
 export type InputMode = (typeof InputMode)[keyof typeof InputMode];
+
+/* §1.32 — `OverlayPlacement` (Popover / Tooltip, v1.7) */
+export const OverlayPlacement = {
+  top: "top",
+  bottom: "bottom",
+  start: "start",
+  end: "end",
+  center: "center",
+} as const;
+export type OverlayPlacement =
+  (typeof OverlayPlacement)[keyof typeof OverlayPlacement];
+
+/* §1.33 — `OverlayTrigger` (Popover / Tooltip, v1.7) */
+export const OverlayTrigger = {
+  manual: "manual",
+  click: "click",
+  hover: "hover",
+  focus: "focus",
+} as const;
+export type OverlayTrigger =
+  (typeof OverlayTrigger)[keyof typeof OverlayTrigger];
+
+/* §1.34 — `OverlayDismissReason` (overlay `onOpenChange$`, v1.7) */
+export const OverlayDismissReason = {
+  escape: "escape",
+  backdrop: "backdrop",
+  outsidePointer: "outsidePointer",
+  programmatic: "programmatic",
+} as const;
+export type OverlayDismissReason =
+  (typeof OverlayDismissReason)[keyof typeof OverlayDismissReason];

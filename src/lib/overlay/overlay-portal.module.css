@@ -1,0 +1,9 @@
+/**
+ * Portal layer shell inside `#qfu-overlay-root` (§75, OV1).
+ */
+
+.layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: auto;
+}
