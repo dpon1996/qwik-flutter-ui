@@ -348,3 +348,13 @@ export const OverlayDismissReason = {
 } as const;
 export type OverlayDismissReason =
   (typeof OverlayDismissReason)[keyof typeof OverlayDismissReason];
+
+/* §97 — `SideSheetPosition` (SideSheet edge alignment, v1.8) */
+export const SideSheetPosition = {
+  left: "left",
+  right: "right",
+  top: "top",
+  bottom: "bottom",
+} as const;
+export type SideSheetPosition =
+  (typeof SideSheetPosition)[keyof typeof SideSheetPosition];

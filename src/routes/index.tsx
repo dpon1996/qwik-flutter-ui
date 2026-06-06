@@ -3,8 +3,9 @@ import type { DocumentHead } from "@builder.io/qwik-city";
 import { AppBar } from "~/components/app-bar";
 import { AppShell } from "~/components/app-shell";
 import { Drawer } from "~/components/drawer";
+import { SideSheet } from "~/components/side-sheet";
 import type { FormValues } from "~/lib/_shared";
-import { OverlayPlacement } from "~/lib/_shared";
+import { OverlayPlacement, SideSheetPosition } from "~/lib/_shared";
 import {
   AlertDialog,
   AlertDialogActions,
@@ -88,28 +89,41 @@ const enqueueActionSnack = $(() => {
 });
 
 export default component$(() => {
-  const submitResult = useSignal<string | null>(null);
   const drawerOpen = useSignal(false);
+  const sideSheetOpen = useSignal(false);
+  const submitResult = useSignal<string | null>(null);
   const alertOpen = useSignal(false);
   const sheetOpen = useSignal(false);
   const stackDialogOpen = useSignal(false);
   const popoverOpen = useSignal(false);
   const menuStatus = useSignal("No menu action yet.");
-
   const snackStatus = useSignal("No snack enqueued yet.");
+
   snackDemo.status = snackStatus;
   menuDemo.status = menuStatus;
 
-  const onFormSubmit = $((values: FormValues) => {
-    submitResult.value = JSON.stringify(values, null, 2);
-  });
-
-  const onDrawerOpenChange = $((next: boolean) => {
+  const onDrawerOpenChange$ = $((next: boolean) => {
     drawerOpen.value = next;
   });
 
-  const openDrawer = $(() => {
+  const openDrawer$ = $(() => {
     drawerOpen.value = true;
+  });
+
+  const closeDrawer$ = $(() => {
+    drawerOpen.value = false;
+  });
+
+  const toggleSideSheet$ = $(() => {
+    sideSheetOpen.value = !sideSheetOpen.value;
+  });
+
+  const closeSideSheet$ = $(() => {
+    sideSheetOpen.value = false;
+  });
+
+  const onFormSubmit = $((values: FormValues) => {
+    submitResult.value = JSON.stringify(values, null, 2);
   });
 
   const onAlertOpenChange = $((next: boolean) => {
@@ -140,6 +154,18 @@ export default component$(() => {
     popoverOpen.value = next;
   });
 
+  const closeAlert = $(() => {
+    alertOpen.value = false;
+  });
+
+  const closeSheet = $(() => {
+    sheetOpen.value = false;
+  });
+
+  const closeStackDialog = $(() => {
+    stackDialogOpen.value = false;
+  });
+
   const enqueueSavedSnack = $(() => {
     enqueueSnackBar({ message: "Saved" });
     snackStatus.value = 'Enqueued: "Saved"';
@@ -156,55 +182,91 @@ export default component$(() => {
     <ThemeProvider inherit={false} theme={{}}>
       <OverlayContainer>
         <SnackBarHost />
-        <Drawer open={drawerOpen.value} onOpenChange$={onDrawerOpenChange}>
+        <Drawer open={drawerOpen.value} onOpenChange$={onDrawerOpenChange$}>
           <nav aria-label="Main">
             <Container padding={16}>
               <Column gap={8}>
                 <Text as="h2">Navigation</Text>
-                <Button type="button" onClick$={() => (drawerOpen.value = false)}>
+                <Button type="button" onClick$={closeDrawer$}>
                   Home
                 </Button>
-                <Button type="button" onClick$={() => (drawerOpen.value = false)}>
+                <Button type="button" onClick$={closeDrawer$}>
                   Components
                 </Button>
-                <Button type="button" onClick$={() => (drawerOpen.value = false)}>
+                <Button type="button" onClick$={closeDrawer$}>
                   Settings
                 </Button>
               </Column>
             </Container>
           </nav>
         </Drawer>
-        <AppShell
-          appBar={
-            <AppBar
-              leading={
-                <Button
-                  type="button"
-                  aria-label="Open navigation menu"
-                  aria-expanded={drawerOpen.value}
-                  onClick$={openDrawer}
-                >
-                  ☰
-                </Button>
-              }
-              title={<Text as="h1">qwik-flutter-ui playground</Text>}
-              actions={[
-                <Button key="docs" type="button" aria-label="Documentation">
-                  Docs
-                </Button>,
-              ]}
-            />
-          }
+        <SideSheet
+          id="playground-filters"
+          open={sideSheetOpen.value}
+          width={320}
+          height={280}
+          position={SideSheetPosition.right}
+          aria-label="Playground filters"
         >
+          <Container padding={16}>
+            <Column gap={12}>
+              <Text as="h2">Filters</Text>
+              <Text>
+                Edge overlay panel — stacks above page content without a backdrop
+                or focus trap.
+              </Text>
+              <Switch label="Show archived" defaultChecked={false} />
+              <Switch label="Show drafts" defaultChecked={true} />
+              <Button type="button" onClick$={closeSideSheet$}>
+                Close panel
+              </Button>
+            </Column>
+          </Container>
+        </SideSheet>
+        <AppShell>
+          <AppBar
+            q:slot="appBar"
+            leading={
+              <Button
+                type="button"
+                aria-label="Open navigation menu"
+                aria-expanded={drawerOpen.value}
+                onClick$={openDrawer$}
+              >
+                ☰
+              </Button>
+            }
+            title={<Text as="h1">qwik-flutter-ui playground</Text>}
+            actions={[
+              <Button
+                key="filters"
+                type="button"
+                aria-expanded={sideSheetOpen.value}
+                aria-controls="playground-filters"
+                onClick$={toggleSideSheet$}
+              >
+                Filters
+              </Button>,
+              <Button key="docs" type="button" aria-label="Documentation">
+                Docs
+              </Button>,
+            ]}
+          />
           <Container padding={24}>
             <Column gap={24}>
-              <Text as="h2">App Structure — AppShell + AppBar + Drawer</Text>
+              <Text as="h2">App Structure — AppShell + AppBar + Drawer + SideSheet</Text>
               <Text>
-                Page chrome is rendered via <code>AppShell.appBar</code>,{" "}
-                <code>AppBar</code>, and the modal <code>Drawer</code> (§91–§95).
-                Use the menu button in the app bar to open the drawer; dismiss
-                with Escape, backdrop click, or a nav item.
+                Page chrome uses <code>AppShell</code> for <code>AppBar</code>,
+                plus modal <code>Drawer</code> and edge-overlay{" "}
+                <code>SideSheet</code> inside <code>OverlayContainer</code>{" "}
+                (§91–§97). Open the drawer with ☰; toggle the right-side filter
+                panel with Filters in the app bar. The side sheet overlays page
+                content — no backdrop or focus trap. Panel state:{" "}
+                {sideSheetOpen.value ? "open" : "closed"}.
               </Text>
+              <Button type="button" onClick$={toggleSideSheet$}>
+                Toggle filters panel (main content)
+              </Button>
 
               <Text as="h2">Overlays — AlertDialog</Text>
 
@@ -218,10 +280,10 @@ export default component$(() => {
                   <Text>This action cannot be undone.</Text>
                 </AlertDialogContent>
                 <AlertDialogActions>
-                  <Button type="button" onClick$={() => (alertOpen.value = false)}>
+                  <Button type="button" onClick$={closeAlert}>
                     Cancel
                   </Button>
-                  <Button type="button" onClick$={() => (alertOpen.value = false)}>
+                  <Button type="button" onClick$={closeAlert}>
                     Delete
                   </Button>
                 </AlertDialogActions>
@@ -248,7 +310,7 @@ export default component$(() => {
                     <Button type="button" onClick$={openStackDialog}>
                       Open dialog over sheet
                     </Button>
-                    <Button type="button" onClick$={() => (sheetOpen.value = false)}>
+                    <Button type="button" onClick$={closeSheet}>
                       Close sheet
                     </Button>
                   </Column>
@@ -265,7 +327,7 @@ export default component$(() => {
                   <Text>Only this dialog should receive Escape while open.</Text>
                 </DialogContent>
                 <DialogActions>
-                  <Button type="button" onClick$={() => (stackDialogOpen.value = false)}>
+                  <Button type="button" onClick$={closeStackDialog}>
                     Close dialog
                   </Button>
                 </DialogActions>

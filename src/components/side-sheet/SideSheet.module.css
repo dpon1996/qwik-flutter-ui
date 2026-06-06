@@ -1,0 +1,64 @@
+/*
+ * SideSheet — non-modal fixed edge overlay panel (§97).
+ * Portaled above page content; no backdrop or focus trap.
+ */
+
+.closed {
+  display: none;
+}
+
+.host {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.panel {
+  position: fixed;
+  z-index: 1;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  pointer-events: auto;
+  background: var(--qfu-color-surface, #fff);
+  color: var(--qfu-color-on-surface, #1a1a1a);
+  box-shadow:
+    0 8px 10px -5px rgb(0 0 0 / 0.2),
+    0 16px 24px 2px rgb(0 0 0 / 0.14),
+    0 6px 30px 5px rgb(0 0 0 / 0.12);
+}
+
+.positionLeft {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-inline-end: 1px solid var(--qfu-color-outline-variant, #e0e0e0);
+}
+
+.positionRight {
+  top: 0;
+  bottom: 0;
+  right: 0;
+  border-inline-start: 1px solid var(--qfu-color-outline-variant, #e0e0e0);
+}
+
+.positionTop {
+  top: 0;
+  left: 0;
+  right: 0;
+  border-block-end: 1px solid var(--qfu-color-outline-variant, #e0e0e0);
+}
+
+.positionBottom {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-block-start: 1px solid var(--qfu-color-outline-variant, #e0e0e0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    transition: none;
+  }
+}

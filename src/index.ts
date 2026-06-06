@@ -56,3 +56,4 @@ export * from "./lib/menu";
 export * from "./components/app-shell";
 export * from "./components/app-bar";
 export * from "./components/drawer";
+export * from "./components/side-sheet";

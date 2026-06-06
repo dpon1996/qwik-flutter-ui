@@ -29,9 +29,9 @@ describe("AppShell", () => {
       </AppShell>,
     );
 
-    expect(screen.querySelector("header")).toBeFalsy();
-    expect(screen.querySelector("aside")).toBeFalsy();
-    expect(screen.querySelector("nav")).toBeFalsy();
+    expect(screen.querySelector("header")?.childElementCount ?? 0).toBe(0);
+    expect(screen.querySelector("aside")?.childElementCount ?? 0).toBe(0);
+    expect(screen.querySelector("nav")?.childElementCount ?? 0).toBe(0);
     expect(screen.querySelector("main")).not.toBeNull();
   });
 
@@ -40,8 +40,8 @@ describe("AppShell", () => {
     await render(
       <AppShell
         appBar={<div data-testid="app-bar">App bar</div>}
-        drawer={<div data-testid="drawer">Drawer</div>}
-        sideSheet={<div data-testid="side-sheet">Side sheet</div>}
+        drawer={<aside data-testid="drawer">Drawer</aside>}
+        sideSheet={<aside data-testid="side-sheet">Side sheet</aside>}
         bottomNavigationBar={<div data-testid="bottom-nav">Nav</div>}
       >
         <div data-testid="body">Body</div>
@@ -52,12 +52,8 @@ describe("AppShell", () => {
       true,
     );
     expect(screen.querySelectorAll("aside")).toHaveLength(2);
-    expect(
-      screen.querySelector('[data-testid="drawer"]')?.closest("aside"),
-    ).not.toBeNull();
-    expect(
-      screen.querySelector('[data-testid="side-sheet"]')?.closest("aside"),
-    ).not.toBeNull();
+    expect(screen.querySelector('[data-testid="drawer"]')?.tagName).toBe("ASIDE");
+    expect(screen.querySelector('[data-testid="side-sheet"]')?.tagName).toBe("ASIDE");
     expect(screen.querySelector("nav")?.contains(screen.querySelector('[data-testid="bottom-nav"]'))).toBe(
       true,
     );

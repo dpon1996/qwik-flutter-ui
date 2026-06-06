@@ -1,6 +1,6 @@
 # qwik-flutter-ui — Public API Design
 
-> **Status:** v1 layout + typography finalized. **v1.1** (§15–§21) specified — v1.1 open questions approved (§102). **v1.2** scrolling (§22–§24) specified — resolve open questions in §101 before implementation. **v1.25** `MediaQuery` specified (§25) — resolve open questions in §27 before implementation. **v1.3** forms **specified** (§28–§37). **v1.4** selection controls **specified** (§46–§56). **v1.5** theming **specified and implemented** (§57; decisions **T1–T6** in §105). **v1.6** form decoration **specified** (§58–§72; decisions **FD1–FD10** in §105). **v1.7** overlays **specified and implemented** (§73–§89; decisions **OV1–OV15** in §105). **v1.8** App Structure **specified and approved** (§90–§99; decisions **AB1–AB7**, **DR1–DR7**, **SS1–SS7**, **BN1–BN9** in §105). **Next:** **v1.9 Navigation** (§106, §88).
+> **Status:** v1 layout + typography finalized. **v1.1** (§15–§21) specified — v1.1 open questions approved (§102). **v1.2** scrolling (§22–§24) specified — resolve open questions in §101 before implementation. **v1.25** `MediaQuery` specified (§25) — resolve open questions in §27 before implementation. **v1.3** forms **specified** (§28–§37). **v1.4** selection controls **specified** (§46–§56). **v1.5** theming **specified and implemented** (§57; decisions **T1–T6** in §105). **v1.6** form decoration **specified** (§58–§72; decisions **FD1–FD10** in §105). **v1.7** overlays **specified and implemented** (§73–§89; decisions **OV1–OV15** in §105). **v1.8** App Structure **specified and approved** (§90–§99; decisions **AB1–AB7**, **DR1–DR7**, **SS1–SS8**, **BN1–BN9** in §105). **Next:** **v1.9 Navigation** (§106, §88).
 > **Goal:** A Flutter-inspired UI framework for Qwik. The API should feel as close to Flutter as possible while remaining idiomatic JSX.
 
 ---
@@ -1028,6 +1028,19 @@ export const OverlayDismissReason = {
 ```
 
 **Used by:** `Dialog`, `ModalBottomSheet`, `Popover`, `Menu` `onOpenChange$` callbacks (§77–§83).
+
+### 1.35 `SideSheetPosition` — edge alignment (v1.8)
+
+```ts
+export const SideSheetPosition = {
+  left:   "left",
+  right:  "right",
+  top:    "top",
+  bottom: "bottom",
+} as const;
+```
+
+**Used by:** `SideSheet.position` (§97).
 
 ---
 
@@ -5708,7 +5721,7 @@ Explicitly **out of scope** for v1.7:
 | `AppShell` | **Specified §91** | **v1.8** App Structure — foundational scaffold (§90–§91) |
 | `AppBar` | **Specified §93** | **v1.8** App Structure — approved (§93.10, §105 AB1–AB7) |
 | `Drawer` | **Specified §95** | **v1.8** App Structure — approved (§95.11, §105 DR1–DR7) |
-| `SideSheet` | **Specified §97** | **v1.8** App Structure — approved (§97.10, §105 SS1–SS7) |
+| `SideSheet` | **Specified §97** | **v1.8** App Structure — approved (§97.10, §105 SS1–SS8) |
 | `BottomNavigationBar` | **Specified §99** | **v1.8** App Structure — approved (§99.11, §105 BN1–BN9) |
 | `NavigationRail` | Defer | **v1.9** Navigation |
 | `Tabs` / `TabBar` / `TabPanel` | Defer | **v1.9** Navigation |
@@ -6314,7 +6327,7 @@ Rationale:
 | `AppShell` layout + landmarks (§91) | Adaptive scaffolds (§88 deferred responsive) |
 | `AppBar` specified API (§92–§93) | Sliver / collapsing / pinned app bars |
 | `Drawer` specified API (§94–§95) | Mini / permanent / responsive drawer |
-| `SideSheet` specified API (§96–§97) | Modal / overlay side sheets |
+| `SideSheet` specified API (§96–§97) | Backdrop scrim / focus trap on side sheet |
 | `BottomNavigationBar` specified API (§98–§99) | Badges / adaptive navigation |
 | Composition recommendation | Drawer state, route-aware nav |
 | SSR/a11y review | `AdaptiveScaffold`, breakpoint scaffolds (§88 deferred responsive) |
@@ -6327,7 +6340,7 @@ Rationale:
 
 **Phase 3 — `Drawer` (§94–§95):** specified and approved (§95.11, §105 DR1–DR7).
 
-**Phase 4 — `SideSheet` (§96–§97):** specified and approved (§97.10, §105 SS1–SS7).
+**Phase 4 — `SideSheet` (§96–§97):** specified and approved (§97.10, §105 SS1–SS8).
 
 **Phase 5 — `BottomNavigationBar` (§98–§99):** specified and approved (§99.11, §105 BN1–BN9).
 
@@ -6350,7 +6363,7 @@ Reference §0.10 `app-shell/` folder placeholder and public exports planning tab
 | **`AppBar` + `AppShell.appBar`** wiring | Pass (§92.6, AB6) |
 | **`Drawer`** modal overlay consumer; not `Dialog` | Pass (§95, DR1–DR7) |
 | **`Drawer`** focus trap, escape, backdrop, focus restore | Pass (§95.5–§95.7) |
-| **`SideSheet`** non-modal layout; no `OverlayPortal` | Pass (§97, SS1–SS7) |
+| **`SideSheet`** non-modal edge overlay via `OverlayPortal` | Pass (§97, SS1–SS8) |
 | **`SideSheet` vs `Drawer`** separation | Pass (§97.9) |
 | **`BottomNavigationBar`** `<nav>` + `aria-current` + arrow keys | Pass (§99, BN1–BN9) |
 | **SSR** — static chrome markup; closed drawer/side sheet hidden deterministically | Pass (§91.7, §93.7, §95.8, §97.8, §99.8) |
@@ -6358,7 +6371,7 @@ Reference §0.10 `app-shell/` folder placeholder and public exports planning tab
 | **Resumability** — QRL boundaries; no module-level chrome state | Pass (§91.7, §93.7, §95.8, §97.8, §99.8) |
 | **Flutter parity** — intentional divergences documented | Pass (§93.8, §95.9, §97.7, §99.9) |
 | **Non-goals** locked (routing, adaptive scaffolds, slivers) | Pass (§93.9, §95.10, §97.8, §99.10) |
-| **Decisions AB1–AB7, DR1–DR7, SS1–SS7, BN1–BN9** closed (§105) | Pass |
+| **Decisions AB1–AB7, DR1–DR7, SS1–SS8, BN1–BN9** closed (§105) | Pass |
 
 ---
 
@@ -7085,54 +7098,54 @@ All Drawer architecture questions for v1.8 are **closed**. Decisions recorded in
 
 ### 96.1 Purpose
 
-- Material **Standard Side Sheet** equivalent for Qwik apps — secondary content **alongside** the main page (not modal)
+- Material **Standard Side Sheet** equivalent for Qwik apps — secondary content **overlaid** on the page edge (non-modal)
 - Typical uses: inspector panel, properties panel, details panel, filters panel, context panel
-- Integrates with `AppShell` via the `sideSheet` region prop (§90.4 Option B, §91.3)
-- **Specified §97** — approved (§97.10, §105 SS1–SS7)
+- Renders inside **`OverlayContainer`** as a fixed edge panel above page chrome (§90.2, §97.4)
+- **Specified §97** — approved (§97.10, §105 SS1–SS8)
 
 ### 96.2 Relationship to Material / Flutter
 
-Material **standard side sheets** sit beside primary content and participate in page layout — they are **not** modal dialogs and **not** navigation drawers.
+Material **standard side sheets** can appear as companion panels beside primary content. On the web, qwik-flutter-ui models toggled inspector / filter panels as a **fixed edge overlay** that stacks above the page without modal backdrop semantics.
 
-Flutter does not ship a first-class `SideSheet` widget on `Scaffold`; web apps commonly model this as a persistent or toggled **companion column**. qwik-flutter-ui names the widget **`SideSheet`** and maps it to `AppShell.sideSheet` (§91.3) — parallel to `Scaffold.endDrawer`-style companion panels without drawer modal semantics.
+Flutter does not ship a first-class `SideSheet` widget on `Scaffold`; web apps commonly model this as a toggled panel anchored to a screen edge. qwik-flutter-ui names the widget **`SideSheet`** and renders it via **`OverlayPortal`** (`modal={false}`) — parallel to companion panels without drawer modal semantics.
 
 ```txt
-AppShell
-├─ Content   (main — `<main>`)
-└─ SideSheet (secondary — `<aside>`)
+OverlayContainer
+├─ AppShell + page content
+└─ SideSheet (fixed edge overlay — `<aside>` portaled above content)
 ```
 
-No routing integration, overlay stacking, or breakpoint-driven layout in this milestone.
+No routing integration or breakpoint-driven layout in this milestone.
 
 ### 96.3 Responsibilities vs non-goals
 
 | Owns | Does not own |
 | ---- | ------------ |
 | Secondary content region (JSX children) | Routing |
-| Side placement (`start` / `end`) | Navigation state |
-| Layout participation in `AppShell` grid | Overlay stacking / `OverlayContainer` layers |
-| Optional visibility (`open`) | Focus trapping / modal backdrop |
-| Panel width | Responsive breakpoint switching |
+| Edge placement (`left` / `right` / `top` / `bottom`) | Navigation state |
+| Overlay stacking via `OverlayContainer` | Modal backdrop scrim |
+| Optional visibility (`open`) | Focus trapping |
+| Panel `width` (horizontal edges) and `height` (vertical edges) | Responsive breakpoint switching |
 
-**Distinction from `Drawer` (§94–§95):** `Drawer` is **modal** navigation (overlay, backdrop, focus trap). `SideSheet` is **non-modal** companion content — do not conflate the two widgets.
+**Distinction from `Drawer` (§94–§95):** `Drawer` is **modal** navigation (backdrop, focus trap). `SideSheet` is **non-modal** companion content — overlays the page edge without blocking interaction behind the panel.
 
 ### 96.4 Architecture options (A vs B)
 
-| Criterion | Option A — always-visible panel | Option B — optional `open` visibility |
-| --------- | ------------------------------- | ------------------------------------- |
-| Layout participation | Always consumes horizontal space | **`open={true}`** reserves column; **`open={false}`** main expands |
+| Criterion | Option A — always-visible overlay | Option B — optional `open` visibility |
+| --------- | --------------------------------- | ------------------------------------- |
+| Presentation | Always portaled on screen edge | **`open={true}`** shows overlay; **`open={false}`** hidden anchor aside |
 | Flutter / Material parity | Matches persistent companion panel | Matches toggled inspector / filters panel |
-| Accessibility | Stable complementary landmark | Caller wires toggle + `aria-expanded` on trigger |
-| SSR | Static aside always in markup | Static markup; hidden via CSS/`hidden` when `open={false}` |
-| AppShell integration | Simple slot | **`open`** coordinates main + aside grid tracks without overlay |
+| Accessibility | Stable complementary landmark when open | Caller wires toggle + `aria-expanded` on trigger |
+| SSR | Static aside anchor in markup | Static markup; hidden via `hidden` when `open={false}` |
+| Overlay integration | Always consumes overlay layer | **`open`** toggles portal without backdrop |
 
 **Recommendation: Option B (`open` prop).**
 
 Rationale:
 
-- Inspector / filters panels are commonly **toggled** — `open` models visibility without modal overlay semantics
-- Principle #4: deterministic SSR — default `open={false}` or caller-controlled `open` from server props; no portal
-- Principle #7: no overlay infrastructure — pure CSS grid/flex layout in `AppShell`
+- Inspector / filters panels are commonly **toggled** — `open` models visibility without modal backdrop semantics
+- Principle #4: deterministic SSR — default `open={false}` or caller-controlled `open` from server props
+- Principle #10: shared overlay infrastructure — `OverlayPortal` with `modal={false}` stacks above chrome
 - Option A viable when panel is always visible — equivalent to **`open={true}`** without a toggle
 
 Content uses **JSX nesting** (§0.1), not a `children` prop on the public interface.
@@ -7141,40 +7154,38 @@ Content uses **JSX nesting** (§0.1), not a `children` prop on the public interf
 
 | In scope (this doc) | Out of scope |
 | ------------------- | ------------ |
-| `SideSheet` widget API (§97) | Modal / overlay side sheets |
-| Non-modal layout companion panel | Modal / overlay side sheets |
-| AppShell `sideSheet` integration | `Drawer` replacement |
-| `open`, `width`, `position` props | Responsive / breakpoint behavior |
+| `SideSheet` widget API (§97) | Backdrop scrim / focus trap |
+| Non-modal fixed edge overlay | `Drawer` replacement |
+| `open`, `width`, `height`, `position` props | Responsive / breakpoint behavior |
+| `OverlayContainer` consumer | In-layout shell column (legacy `AppShell.sideSheet` slot remains for static chrome only) |
 
 **v1.8 App Structure chrome:** fully specified §92–§99 — ready for implementation.
 
-### 96.6 AppShell integration
+### 96.6 Recommended placement
 
-`AppShell` owns page structure; `SideSheet` is passed into the **`sideSheet` region prop**:
+`SideSheet` is a sibling inside **`OverlayContainer`** — same pattern as `Drawer`, but non-modal:
 
 ```tsx
-<AppShell
-  sideSheet={
-    <SideSheet open={panelOpen} width={360} position="end">
-      <aside aria-label="Properties">
-        <Column gap={8}>
-          <Text as="h2">Properties</Text>
-          {/* inspector content */}
-        </Column>
-      </aside>
+<ThemeProvider inherit={false} theme={{}}>
+  <OverlayContainer>
+    <AppShell appBar={/* … */}>
+      {/* primary page body */}
+    </AppShell>
+    <SideSheet open={panelOpen} width={360} height={280} position="right">
+      <Column gap={8}>
+        <Text as="h2">Properties</Text>
+        {/* inspector content */}
+      </Column>
     </SideSheet>
-  }
->
-  <Column gap={16}>{/* primary page body */}</Column>
-</AppShell>
+  </OverlayContainer>
+</ThemeProvider>
 ```
 
 Clarifications:
 
-- **`AppShell` remains the owner of page structure** — CSS grid/flex allocates main + side columns (§91.4–§91.5).
-- **`SideSheet` owns side content** — width, placement, visibility; not `AppShell`.
-- **`SideSheet` does not use `OverlayContainer`** — no backdrop, no focus trap, no layer stack (§90.2, §95.5 contrast).
-- **`AppShell.sideSheet` prop:** wire to `<aside>` region per §91.4 when implementing Phase 20 (§107).
+- **`SideSheet` owns panel content** — width, height, placement, visibility; not `AppShell`.
+- **`SideSheet` uses `OverlayContainer`** — portaled above page chrome; no backdrop, no focus trap (§90.2, §95.5 contrast).
+- **`AppShell.sideSheet` region** (§91.3) remains for static complementary markup — not the primary integration path for this widget.
 
 ### 96.7 Folder / export (pointer only)
 
@@ -7186,26 +7197,18 @@ Reference §0.10 `side-sheet/` folder placeholder and public exports planning ta
 
 ### 97.1 Purpose
 
-Non-modal secondary content panel that participates in `AppShell` layout — inspector, properties, details, filters, or context panels.
+Non-modal secondary content panel fixed to a screen edge and **overlaid above** page content — inspector, properties, details, filters, or context panels.
 
-`SideSheet` is **not** a `Dialog`, **not** a `Drawer`, and **not** an overlay primitive.
+`SideSheet` is **not** a `Dialog` and **not** a `Drawer`. It **is** an overlay consumer via `OverlayPortal` (`modal={false}`) — stacks above widgets without backdrop or focus trap.
 
 ### 97.2 Recommended usage
 
-With `AppShell` (recommended):
+Inside `OverlayContainer` (recommended):
 
 ```tsx
 <ThemeProvider inherit={false} theme={{}}>
   <OverlayContainer>
     <AppShell
-      sideSheet={
-        <SideSheet open={panelOpen} width={320} position="end">
-          <Column gap={8}>
-            <Text as="h2">Filters</Text>
-            {/* filter controls */}
-          </Column>
-        </SideSheet>
-      }
       appBar={
         <AppBar
           title={<Text as="h1">Reports</Text>}
@@ -7224,34 +7227,60 @@ With `AppShell` (recommended):
     >
       {/* main content */}
     </AppShell>
+    <SideSheet
+      id="report-filters"
+      open={panelOpen}
+      width={320}
+      height={280}
+      position={SideSheetPosition.right}
+      aria-label="Report filters"
+    >
+      <Column gap={8}>
+        <Text as="h2">Filters</Text>
+        {/* filter controls */}
+      </Column>
+    </SideSheet>
   </OverlayContainer>
 </ThemeProvider>
 ```
 
-Standalone (outside `AppShell` — rare):
+Horizontal edge example:
 
 ```tsx
-<SideSheet open width={280} position="start">
+<SideSheet open width={280} position={SideSheetPosition.left} aria-label="Inspector">
   <Column gap={8}>{/* secondary content */}</Column>
+</SideSheet>
+```
+
+Vertical edge example:
+
+```tsx
+<SideSheet open height={240} position={SideSheetPosition.bottom} aria-label="Tools">
+  <Row gap={8}>{/* tool strip */}</Row>
 </SideSheet>
 ```
 
 ### 97.3 API
 
-> **Status:** **Specified and approved** (§97.10, §105 **SS1–SS7**). Ready for implementation.
+> **Status:** **Specified and approved** (§97.10, §105 **SS1–SS8**). Ready for implementation.
 
 ```ts
 export interface SideSheetProps extends BaseProps {
-  /** When false, panel is hidden and main content uses full width. Default **false** (SS1). */
+  /** When false, panel is hidden. Default **false** (SS1). */
   open?: boolean;
 
-  /** Panel width. Default **360** (`Length` px) — SS4. */
+  /** Panel width for `left` / `right` edges. Default **360** (`Length` px) — SS4. */
   width?: Length;
 
-  /** Horizontal placement relative to main content. Default **`"end"`** (trailing edge, LTR). */
-  position?: "start" | "end";
+  /** Panel height for `top` / `bottom` edges. Default **360** (`Length` px) — SS8. */
+  height?: Length;
+
+  /** Screen edge the sheet attaches to. Default **`SideSheetPosition.right`** — SS5. */
+  position?: SideSheetPosition;
 }
 ```
+
+**Enum:** `SideSheetPosition` — const object + companion type (§0.11, §1.35): `left`, `right`, `top`, `bottom`.
 
 **Content:** JSX children only (§0.1). No `children` prop on the public interface.
 
@@ -7264,66 +7293,71 @@ export interface SideSheetProps extends BaseProps {
 
 **Rationale:**
 
-- **`open`:** Option B (§96.4); toggles layout participation without modal semantics.
-- **`width`:** caller-owned panel size; `AppShell` grid uses this for the aside track.
-- **`position`:** `"start"` \| `"end"` maps to inline-start / inline-end (RTL-aware via logical properties).
-- **No overlay props:** intentionally omitted — non-goals (§97.8).
+- **`open`:** Option B (§96.4); toggles overlay visibility without modal semantics.
+- **`width`:** caller-owned panel width for `left` / `right` edges; spans full viewport height.
+- **`height`:** caller-owned panel height for `top` / `bottom` edges; spans full viewport width.
+- **`position`:** `SideSheetPosition` — physical screen edge alignment (SS5).
+- **No backdrop / focus-trap props:** intentionally omitted — non-goals (§97.8).
 
-No new §1 enums in this milestone (`position` is a string union — SS5).
+New §1 enum: **`SideSheetPosition`** (SS5).
 
 ### 97.4 Layout model
 
 ```txt
-AppShell (horizontal shell — conceptual)
-├─ Main column     (`children` → `<main>`; flex-grow)
-└─ SideSheet       (`sideSheet` → `<aside>`; fixed width when open)
+OverlayContainer
+├─ AppShell + page content
+└─ SideSheet (open={true}) — portaled fixed edge panel
 
 SideSheet (open={false})
-└─ (aside hidden — main spans full width)
+└─ hidden anchor `<aside>` — no overlay layer (SS6)
 
-SideSheet (open={true}, position="end")
-├─ Main            (shrinks; min-width: 0)
-└─ Panel           (width from `width` prop; scrollable)
+SideSheet (open={true}, position="right", width=360)
+└─ Panel           (fixed right edge; width from `width`; height 100%)
+   └─ Content      (JSX children)
+
+SideSheet (open={true}, position="bottom", height=360)
+└─ Panel           (fixed bottom edge; height from `height`; width 100%)
    └─ Content      (JSX children)
 ```
 
 | Concern | Owner |
 | ------- | ----- |
-| **Shell grid / flex** | `AppShell` — allocates main + optional aside tracks |
-| **Width** | `SideSheet.width` — default 360px; sets aside track size when open |
-| **Placement** | `SideSheet.position` — start vs end column in shell |
+| **Overlay stack** | `OverlayContainer` + internal `OverlayPortal` (`modal={false}`) — SS7 |
+| **Width** | `SideSheet.width` — default 360px; used for `left` / `right` |
+| **Height** | `SideSheet.height` — default 360px; used for `top` / `bottom` |
+| **Placement** | `SideSheet.position` — screen edge (`left`, `right`, `top`, `bottom`) |
 | **Content** | JSX children — caller composes inspector UI |
-| **Visibility** | `SideSheet.open` — hide aside without unmounting slot (`hidden` + CSS grid `0fr` when closed — SS6) |
+| **Visibility** | `SideSheet.open` — hidden anchor aside when closed (SS6) |
 
-Implementation (future): **pure CSS layout** in `AppShell` + `SideSheet` — **no JS measurement**, **no `OverlayPortal`**.
+Implementation: **fixed positioning** + **`OverlayPortal`** — pointer events pass through outside the panel (`pointer-events: none` on host, `auto` on panel).
 
 ### 97.5 Accessibility
 
-- Root: **`<aside>`** (via `AppShell.sideSheet` region §91.4) — **complementary** landmark.
+- Root: **`<aside>`** — **complementary** landmark when open.
 - **Label:** caller supplies accessible name — `aria-label` or `aria-labelledby` on `<aside>` or inner heading (`<Text as="h2">`).
 - **Not navigation by default:** use `<nav>` inside only when content is primarily navigation links.
 - **Toggle control:** when panel is toggled, trigger uses **`aria-expanded`** + **`aria-controls`** pointing to aside `id` (caller responsibility — §97.2).
-- **No focus trap:** focus remains free to move between main and side panel (non-modal).
-- **Hidden panel:** when `open={false}`, aside uses **`hidden`** attribute; removed from accessibility tree (SS6).
-- **Screen reader order:** DOM order follows visual order — `position="start"` renders aside before `<main>` in DOM when open.
+- **No focus trap:** focus remains free to move between main content and side panel (non-modal).
+- **Hidden panel:** when `open={false}`, anchor aside uses **`hidden`** attribute; removed from accessibility tree (SS6).
+- **Pointer events:** clicks outside the panel reach underlying content — no backdrop intercept.
 
 ### 97.6 SSR and resumability review
 
 | Check | Result |
 | ----- | ------ |
-| Deterministic SSR markup | Pass — aside structure in static HTML; visibility from `open` prop |
-| Browser APIs in render | None — no `window` / `document` / `useVisibleTask$` required |
-| Overlay / portal | None — no client-only portal branches |
+| Deterministic SSR markup | Pass — closed state renders hidden anchor aside; open state portaled on client |
+| Browser APIs in render | None in render — portal host from `OverlayContainer` |
+| Overlay / portal | `OverlayPortal` when open — client portal branch (same pattern as `Drawer`) |
 | Client state | Caller-owned `open` only (controlled) — no internal uncontrolled mode (SS2) |
-| Resumability | Pass — layout is CSS; controlled `open` from server props resumes cleanly |
+| Resumability | Pass — controlled `open` from server props resumes cleanly |
 
 ### 97.7 Material comparison — intentional differences
 
 | Material / web pattern | qwik-flutter-ui v1.8 |
 | ---------------------- | -------------------- |
-| Standard side sheet (companion panel) | `SideSheet` — layout participant, non-modal |
-| Modal side sheet / overlay panel | **Non-goal** — use `Dialog` or defer v2+ modal variant |
-| Navigation drawer | **`Drawer`** (§95) — modal, overlay, nav semantics |
+| Standard side sheet (companion panel) | `SideSheet` — fixed edge overlay, non-modal |
+| Modal side sheet / overlay panel with scrim | **Non-goal** — use `Dialog` or `Drawer` |
+| Navigation drawer | **`Drawer`** (§95) — modal, backdrop, nav semantics |
 | Persistent end panel | `SideSheet` with `open={true}` |
 | Toggled inspector / filters | `SideSheet` with controlled `open` |
 | Responsive permanent vs modal sheet | **Defer** — no breakpoint logic in v1.8 |
@@ -7332,8 +7366,7 @@ Implementation (future): **pure CSS layout** in `AppShell` + `SideSheet` — **n
 
 Do **not** ship in v1.8 `SideSheet`:
 
-- Modal side sheets / backdrop scrim
-- Overlay side sheets / `OverlayPortal` usage
+- Backdrop scrim / dimmed overlay
 - Focus trapping or scroll lock
 - `Drawer` replacement or duplicate navigation drawer
 - Responsive behavior / breakpoint-driven placement
@@ -7341,33 +7374,34 @@ Do **not** ship in v1.8 `SideSheet`:
 - Routing integration / deep-link panel state
 - `BottomNavigationBar` (future phase)
 
-Future milestones may add modal side sheet variant or responsive rules — **separate widget or props**, not scope creep on v1.8 `SideSheet`.
+Future milestones may add backdrop, focus trap, or responsive rules — **separate widget or props**, not scope creep on v1.8 `SideSheet`.
 
 ### 97.9 Relationship to `Drawer`
 
 | | `Drawer` (§95) | `SideSheet` (§97) |
 | - | -------------- | ----------------- |
 | Purpose | Primary **navigation** | Secondary **companion content** |
-| Presentation | **Modal** — backdrop + overlay | **Non-modal** — in-layout column |
+| Presentation | **Modal** — backdrop + overlay | **Non-modal** — edge overlay, no backdrop |
 | Focus | Trap while open | No trap |
-| `OverlayContainer` | Consumer (§95.5) | **Not used** |
+| `OverlayContainer` | Consumer (§95.5) | **Consumer** (§97.4, SS7) |
 | Typical content | `<nav>` links | Inspector, filters, properties |
 
-Choose **`Drawer`** for app nav menu; choose **`SideSheet`** for secondary tools/content beside the page.
+Choose **`Drawer`** for app nav menu; choose **`SideSheet`** for secondary tools/content on a screen edge.
 
-### 97.10 Open questions — resolved (SS1–SS7)
+### 97.10 Open questions — resolved (SS1–SS8)
 
-All SideSheet architecture questions for v1.8 are **closed**. Decisions recorded in §105 (**SS1–SS7**). Implementation may proceed.
+All SideSheet architecture questions for v1.8 are **closed**. Decisions recorded in §105 (**SS1–SS8**). Implementation may proceed.
 
 | ID | Topic | Decision | Rationale (Design Principles) |
 | -- | ----- | -------- | ----------------------------- |
-| **SS1** | Default `open` | **`false`** when omitted | #4 main full-width SSR default |
+| **SS1** | Default `open` | **`false`** when omitted | #4 closed-by-default SSR |
 | **SS2** | `defaultOpen` | **Not shipped v1.8** — controlled `open` only | #8 minimal API |
 | **SS3** | `onOpenChange$` | **Not shipped v1.8** — caller toggles `open` | #8 no duplicate callback surface |
-| **SS4** | Default `width` | **`360px`** | #1 common inspector width |
-| **SS5** | `position` type | **String union** `"start" \| "end"` | #8 only two values; no new enum |
-| **SS6** | Hidden when `open={false}` | **`hidden` in DOM** — main expands | #4 deterministic SSR slot |
-| **SS7** | `AppShell.sideSheet` wiring | **Grid layout** §91.5 + `<aside>` §91.4; Phase 20 (§107) | #2 complementary landmark |
+| **SS4** | Default `width` | **`360px`** for `left` / `right` | #1 common inspector width |
+| **SS5** | `position` type | **`SideSheetPosition` enum** (§1.35); default **`SideSheetPosition.right`** | #9 const-object enum parity |
+| **SS6** | Hidden when `open={false}` | **`hidden` anchor `<aside>`** — no portal layer | #4 deterministic SSR |
+| **SS7** | Overlay presentation | **`OverlayPortal`** (`modal={false}`) in `OverlayContainer` | #10 shared overlay stack |
+| **SS8** | Default `height` | **`360px`** for `top` / `bottom` | #1 common tool-strip height |
 
 
 ## 98. BottomNavigationBar — overview
@@ -8115,14 +8149,14 @@ All review items resolved.
 | `AppShell` | one (slot) | 1.8 | Flutter `Scaffold` equivalent; semantic `<main>`; stateless (§91). Option B composition. |
 | `AppBar` | — | 1.8 | Top chrome; `<header>`; `leading`/`title`/`actions` (§93). Option B. |
 | `Drawer` | one (slot) | 1.8 | Modal slide-in nav; `open`/`onOpenChange$` (§95). Overlay consumer. |
-| `SideSheet` | one (slot) | 1.8 | Non-modal companion panel; `open`/`width`/`position` (§97). Layout only. |
+| `SideSheet` | one (slot) | 1.8 | Non-modal edge overlay; `open`/`width`/`height`/`position` (§97). `OverlayContainer` consumer. |
 | `BottomNavigationBar` | items (slot) | 1.8 | Bottom dest nav; `BottomNavigationItem` children; `value`/`onChange$` (§99). |
 
 ---
 
 ## 105. Decisions log
 
-v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in §102. **v1.8 App Structure** decisions **AB1–AB7**, **DR1–DR7**, **SS1–SS7**, **BN1–BN9** approved in §93.10, §95.11, §97.10, §99.11.
+v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in §102. **v1.8 App Structure** decisions **AB1–AB7**, **DR1–DR7**, **SS1–SS8**, **BN1–BN9** approved in §93.10, §95.11, §97.10, §99.11.
 
 | #  | Decision                                                                                          | Resolution                                                              |
 | -- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -8261,10 +8295,11 @@ v1 decisions (#1–31) resolved. **v1.1 open questions** (#32–42) approved in 
 | **SS1** | **`SideSheet` default `open`** (§97.10)                                                               | **`false`** when omitted. |
 | **SS2** | **`SideSheet.defaultOpen`** (§97.10)                                                                  | **Not shipped v1.8** — controlled `open` only. |
 | **SS3** | **`SideSheet.onOpenChange$`** (§97.10)                                                                | **Not shipped v1.8** — caller toggles `open`. |
-| **SS4** | **`SideSheet` default `width`** (§97.10)                                                              | **`360px`**. |
-| **SS5** | **`SideSheet.position` type** (§97.10)                                                                | **String union** `"start" \| "end"`. |
-| **SS6** | **`SideSheet` hidden when closed** (§97.10)                                                           | **`hidden` in DOM** — main expands. |
-| **SS7** | **`AppShell.sideSheet` wiring** (§97.10)                                                              | **Grid + `<aside>`** §91.4–§91.5; Phase 20 (§107). |
+| **SS4** | **`SideSheet` default `width`** (§97.10)                                                              | **`360px`** — used for `left` / `right` edges. |
+| **SS5** | **`SideSheet.position` type** (§97.10)                                                                | **`SideSheetPosition` enum** (§1.35). Default **`SideSheetPosition.right`**. |
+| **SS6** | **`SideSheet` hidden when closed** (§97.10)                                                           | **`hidden` anchor `<aside>`** in DOM — no overlay layer. |
+| **SS7** | **`SideSheet` overlay presentation** (§97.10)                                                         | **`OverlayPortal`** (`modal={false}`) inside `OverlayContainer` — stacks above page chrome. |
+| **SS8** | **`SideSheet` default `height`** (§97.10)                                                             | **`360px`** — used for `top` / `bottom` edges. |
 | **BN1** | **`BottomNavigationBar` composition** (§99.11)                                                        | **Option A** — `BottomNavigationItem` children. |
 | **BN2** | **`BottomNavigationBar` default selection** (§99.11)                                                  | **First item**; dev warning if no items. |
 | **BN3** | **`BottomNavigationBar` controlled + uncontrolled** (§99.11)                                          | **Both ship** — `value` / `defaultValue` / `onChange$`. |
@@ -8374,7 +8409,7 @@ Fully specified and **implemented**. Decisions **OV1–OV15** approved (§105). 
 
 **Purpose:** Flutter-style application scaffolding and page structure.
 
-**Status:** **Fully specified and approved** (§90–§99). Decisions **AB1–AB7**, **DR1–DR7**, **SS1–SS7**, **BN1–BN9** in §105. **Ready for implementation** (§90.7, §107 Phases 17–21).
+**Status:** **Fully specified and approved** (§90–§99). Decisions **AB1–AB7**, **DR1–DR7**, **SS1–SS8**, **BN1–BN9** in §105. **Ready for implementation** (§90.7, §107 Phases 17–21).
 
 **`AppShell` is the foundational v1.8 widget.** `AppShell` is the Flutter `Scaffold` equivalent and serves as the root application structure component. `AppBar`, `Drawer`, `SideSheet`, and `BottomNavigationBar` integrate with `AppShell` via named region props (§91.3); they may also be used independently where appropriate.
 
@@ -8866,13 +8901,13 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 
 ### Phase 20 — v1.8 SideSheet
 
-> **Spec:** §96–§97. Decisions **SS1–SS7** approved (§105). **Ready for implementation.**
+> **Spec:** §96–§97. Decisions **SS1–SS8** approved (§105). **Ready for implementation.**
 
-- [ ] `src/lib/side-sheet/` — `SideSheetProps` from §97 (`open`, `width`, `position`).
-- [ ] Non-modal aside layout — no `OverlayPortal`, no focus trap (§97.4, §97.9).
-- [ ] Wire `AppShell.sideSheet` region + grid layout (§96.6, §91.4–§91.5, SS7).
+- [ ] `src/components/side-sheet/` — `SideSheetProps` from §97 (`open`, `width`, `height`, `position`).
+- [ ] Fixed edge overlay via internal `OverlayPortal` (`modal={false}`) — no backdrop, no focus trap (§97.4, §97.9, SS7).
+- [ ] `OverlayContainer` sibling placement (§97.2) — not an `AppShell` layout track.
 - [ ] Export `SideSheet` from `src/index.ts` (§0.10).
-- [ ] Playground demo: `AppShell` + toggled inspector `SideSheet` (§97.2).
+- [ ] Playground demo: `OverlayContainer` + toggled inspector `SideSheet` (§97.2).
 - [ ] `axe` on side-sheet screen (§97.5).
 
 ### Phase 21 — v1.8 BottomNavigationBar

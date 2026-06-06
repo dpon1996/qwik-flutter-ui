@@ -10,7 +10,7 @@
     "rootDir": "src",
     "stripInternal": true
   },
-  "include": ["src/index.ts", "src/lib/**/*", "src/components/app-shell/**/*", "src/components/app-bar/**/*", "src/components/drawer/**/*"],
+  "include": ["src/index.ts", "src/lib/**/*", "src/components/app-shell/**/*", "src/components/app-bar/**/*", "src/components/drawer/**/*", "src/components/side-sheet/**/*"],
   "exclude": [
     "src/routes",
     "src/entry.dev.tsx",
