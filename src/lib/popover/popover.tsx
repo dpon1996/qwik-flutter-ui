@@ -19,7 +19,7 @@ import { OverlayDismissReason, OverlayTrigger } from "../_shared/enums";
 import { computeAnchorPosition } from "../overlay/anchor-position";
 import { focusFirstElement } from "../overlay/focus-trap";
 import { OverlayPortal } from "../overlay/overlay-portal";
-import { useOverlayContext } from "../overlay/use-overlay-layer";
+import { resolveOverlayContext, useOverlayContext } from "../overlay/use-overlay-layer";
 import { useOverlayOpen } from "../overlay/use-overlay-open";
 
 import styles from "./popover.module.css";
@@ -46,7 +46,7 @@ export const Popover = component$<PopoverProps>((props) => {
   const layerId = useId();
 
   const { isOpen, setOpen } = useOverlayOpen(props);
-  const overlayContext = useOverlayContext();
+  const explicitOverlayContext = useOverlayContext();
 
   const coordinates = useSignal({ top: 0, left: 0 });
 
@@ -88,6 +88,7 @@ export const Popover = component$<PopoverProps>((props) => {
         return;
       }
 
+      const overlayContext = resolveOverlayContext(explicitOverlayContext);
       void overlayContext?.getTopLayerId$().then((topLayerId) => {
         if (topLayerId === layerId) {
           event.preventDefault();
@@ -109,6 +110,7 @@ export const Popover = component$<PopoverProps>((props) => {
         return;
       }
 
+      const overlayContext = resolveOverlayContext(explicitOverlayContext);
       void overlayContext?.getTopLayerId$().then((topLayerId) => {
         if (topLayerId === layerId) {
           void closePopover(OverlayDismissReason.outsidePointer);

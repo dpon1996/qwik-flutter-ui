@@ -7231,7 +7231,7 @@ Order matters: every widget below depends on `Container` and `SizedBox`.
 - [x] `src/lib/snack-bar/` — `SnackBarHost`, `enqueueSnackBar$`, `SnackBar` UI (§80, OV14).
 - [x] `src/lib/popover/` — §82 (non-modal; click + manual triggers; OV10 placement).
 - [x] `src/lib/menu/` — §83 (`Popover` + menu semantics; keyboard nav).
-- [ ] OV13 fallback container + dev warning; OV12 SSR `defaultOpen` warning.
+- [x] OV13 fallback container + dev warning; OV12 SSR `defaultOpen` warning.
 - [x] Export `OverlayContainer` from `src/index.ts` (§0.10) — **not** `OverlayPortal` / context.
 - [x] Export `Dialog` + subcomponents from `src/index.ts` (§0.10).
 - [ ] Export remaining overlay widgets per §73.2.1 (§0.10).

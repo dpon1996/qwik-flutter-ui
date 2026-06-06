@@ -11,7 +11,7 @@ import {
 } from "@builder.io/qwik";
 
 import { OverlayContext } from "./context";
-import { ensureFallbackOverlayHost } from "./explicit-host-registry";
+import { ensureFallbackOverlayHost } from "./fallback-overlay-host";
 import type {
   OverlayContextValue,
   OverlayLayerLifecycleStatus,
@@ -22,15 +22,28 @@ import type {
 const NO_OVERLAY_CONTEXT = null;
 
 /**
- * Returns overlay context when inside `<OverlayContainer>`, else `null`.
+ * Returns overlay context from an explicit `<OverlayContainer>` ancestor, else `null`.
+ * Does not create the OV13 fallback — use {@link resolveOverlayContext} in client tasks.
  */
 export function useOverlayContext(): OverlayContextValue | null {
   const ctx = useContext(OverlayContext, NO_OVERLAY_CONTEXT);
   if (ctx === NO_OVERLAY_CONTEXT) {
-    ensureFallbackOverlayHost();
     return null;
   }
   return ctx;
+}
+
+/**
+ * Resolve overlay context on the client — explicit host or OV13 fallback (§74.3).
+ * Safe to call from `useVisibleTask$` only.
+ */
+export function resolveOverlayContext(
+  explicit: OverlayContextValue | null,
+): OverlayContextValue | null {
+  if (explicit) {
+    return explicit;
+  }
+  return ensureFallbackOverlayHost();
 }
 
 export interface UseOverlayLayerResult {
@@ -50,7 +63,7 @@ export function useOverlayLayer(
   portalProps: { open: boolean },
   modal?: boolean,
 ): UseOverlayLayerResult {
-  const ctx = useOverlayContext();
+  const explicitCtx = useOverlayContext();
   const status = useSignal<OverlayLayerLifecycleStatus>("idle");
   const zIndex = useSignal<number | undefined>(undefined);
   const metadata = useSignal<OverlayLayerMetadata | null>(null);
@@ -59,6 +72,8 @@ export function useOverlayLayer(
     track(() => portalProps.open);
     track(() => layerId);
     track(() => modal);
+
+    const ctx = resolveOverlayContext(explicitCtx);
 
     if (!ctx || !portalProps.open) {
       status.value = "idle";
@@ -111,7 +126,7 @@ export function useOverlayLayer(
   });
 
   return {
-    context: ctx,
+    context: explicitCtx,
     layerId,
     status,
     zIndex,

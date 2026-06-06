@@ -22,7 +22,7 @@ import {
   handleFocusTrapKeydown,
 } from "../overlay/focus-trap";
 import { OverlayPortal } from "../overlay/overlay-portal";
-import { useOverlayContext } from "../overlay/use-overlay-layer";
+import { useOverlayContext, resolveOverlayContext } from "../overlay/use-overlay-layer";
 import { useOverlayOpen } from "../overlay/use-overlay-open";
 
 import styles from "./modal-bottom-sheet.module.css";
@@ -48,7 +48,7 @@ export const ModalBottomSheet = component$<ModalBottomSheetProps>((props) => {
 
   const { isOpen, setOpen } = useOverlayOpen(props);
 
-  const overlayContext = useOverlayContext();
+  const explicitOverlayContext = useOverlayContext();
 
   useTask$(() => {
     if (
@@ -93,22 +93,29 @@ export const ModalBottomSheet = component$<ModalBottomSheetProps>((props) => {
         return;
       }
 
+      const overlayContext = resolveOverlayContext(explicitOverlayContext);
+      if (!overlayContext) {
+        return;
+      }
+
       previousFocus = document.activeElement as HTMLElement | null;
       focusFirstElement(panel);
 
       const onKeyDown = (event: KeyboardEvent) => {
-        if (event.key === "Escape" && dismissOnEscape) {
-          void overlayContext?.getTopLayerId$().then((topLayerId) => {
-            if (topLayerId === layerId) {
-              event.preventDefault();
-              event.stopPropagation();
-              void closeSheet(OverlayDismissReason.escape);
-            }
-          });
-          return;
-        }
+        void overlayContext.getTopModalLayerId$().then((topModalLayerId) => {
+          if (topModalLayerId !== layerId) {
+            return;
+          }
 
-        handleFocusTrapKeydown(panel, event);
+          if (event.key === "Escape" && dismissOnEscape) {
+            event.preventDefault();
+            event.stopPropagation();
+            void closeSheet(OverlayDismissReason.escape);
+            return;
+          }
+
+          handleFocusTrapKeydown(panel, event);
+        });
       };
 
       document.addEventListener("keydown", onKeyDown, true);

@@ -16,7 +16,7 @@ import {
 } from "@builder.io/qwik";
 
 import type { SnackBarHostProps, SnackBarOptions } from "../_shared/overlay-types";
-import { useOverlayContext } from "../overlay/use-overlay-layer";
+import { resolveOverlayContext, useOverlayContext } from "../overlay/use-overlay-layer";
 
 import { SNACKBAR_HOST_DATA_ATTR } from "./constants";
 import { SnackBarContext, type SnackBarContextValue } from "./context";
@@ -47,7 +47,7 @@ export const SnackBarHost = component$<SnackBarHostProps>((props) => {
   const { class: className, style: userStyle, ...rest } = props;
 
   const store = useStore(createSnackBarQueueStore);
-  const overlayContext = useOverlayContext();
+  const explicitOverlayContext = useOverlayContext();
   const layerZIndex = useSignal<number | undefined>(undefined);
 
   const enqueue$ = $((options: SnackBarOptions): string => {
@@ -101,6 +101,7 @@ export const SnackBarHost = component$<SnackBarHostProps>((props) => {
     track(() => store.visible?.id);
 
     const visible = store.visible;
+    const overlayContext = resolveOverlayContext(explicitOverlayContext);
     if (!overlayContext || !visible) {
       layerZIndex.value = undefined;
       return;
